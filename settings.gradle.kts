@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 rootProject.name = "Reportamelo"
 include(":app")
 include(":Network")
+include(":Repository")
