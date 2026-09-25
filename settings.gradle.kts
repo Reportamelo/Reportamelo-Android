@@ -26,3 +26,4 @@ rootProject.name = "Reportamelo"
 include(":app")
 include(":Network")
 include(":Repository")
+include(":Models")
