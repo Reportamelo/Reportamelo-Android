@@ -21,6 +21,12 @@ android {
 }
 
 dependencies {
+    implementation(project(":Network"))
+    implementation(project(":Locator"))
+
+    implementation(project(":Models"))
+    implementation(project(":Commons"))
+
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
