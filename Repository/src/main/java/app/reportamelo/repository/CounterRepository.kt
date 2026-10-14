@@ -1,37 +1,20 @@
 package app.reportamelo.repository
 
+import app.reportamelo.models.*
+import app.reportamelo.commons.*
+import app.reportamelo.network.*
 import app.reportamelo.network.CounterService
-import app.reportamelo.network.HTTPHeader
-import app.reportamelo.commons.CommonIntercommunicationErrors
-import app.reportamelo.commons.ServiceError
 
 object CounterRepository {
-    
-    private val service = CounterService()
-    
-    var headers: List<HTTPHeader> = listOf(
-        HTTPHeader(name = "Client-Type", content = "Mobile-App"),
-        HTTPHeader(name = "CountryCode", content = "SV")
-    )
+    private val service = CounterService(ServiceClient("https://api.reportamelo.app/v1/"))
 
-    suspend fun increase() {
-        try {
-            service.increase(headers)
-        } catch (e: ServiceError.NetworkError) {
-            throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network Error")
-        } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.code)
-        } catch (e: Exception) {
-            throw CommonIntercommunicationErrors.GenericError(e.message ?: "Unknown error")
-        }
-    }
-
-    suspend fun count(): Int? {
+    suspend fun getCount(): CustomizedResponse<ReportCounter> {
         return try {
-            val response = service.count(headers)
-            response.data.count
+            service.count(mapOf("CountryCode" to "SV"))
+        } catch (e: ServiceError.BadRequest) {
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: Exception) {
-            null
+            throw CommonIntercommunicationErrors.GenericError(e.message ?: "")
         }
     }
 }

@@ -49,7 +49,7 @@ class UserRepository private constructor() {
         val shared = UserRepository()
     }
 
-    var service: UserService = UserService()
+    var service: UserService = app.reportamelo.network.services.UserService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
     var headers: Map<String, String> = mapOf(
         "Client-Type" to "Mobile-App",
         "CountryCode" to "SV",
@@ -67,9 +67,9 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.BadRequest) {
             throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: ServiceError.Forbidden) {
-            throw CommonIntercommunicationErrors.Forbidden(e.response)
+            throw CommonIntercommunicationErrors.Forbidden(e.response.code)
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -86,9 +86,9 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.BadRequest) {
             throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: ServiceError.Forbidden) {
-            throw CommonIntercommunicationErrors.Forbidden(e.response)
+            throw CommonIntercommunicationErrors.Forbidden(e.response.code)
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -97,7 +97,7 @@ class UserRepository private constructor() {
     suspend fun loginAsGuest(): Pair<UserOAuthResultState, String> {
         return try {
             val result = service.loginAsGuest(headers)
-            if (result.code == "GUEST_SESSION_CREATED") {
+            if (result.code.toString() == "GUEST_SESSION_CREATED") {
                 Pair(UserOAuthResultState.INEXISTENT, result.authSessionId)
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.code)
@@ -108,66 +108,48 @@ class UserRepository private constructor() {
     }
 
     fun getProfilePicture(): String {
-        return UserDefaults.standard.getString("avatar_url") ?: ""
+        return app.reportamelo.commons.AppPreferences.getString("avatar_url") ?: ""
     }
 
     fun getProfilePictureURL(): Uri? {
-        val user = GIDSignIn.sharedInstance.currentUser
-        val profile = user?.profile
-        if (profile?.hasImage != true) {
-            return null
-        }
-        return profile.imageURL(withDimension = 200)
+        
+        
+        
+        return null
     }
 
     fun getNames(): String {
-        return UserDefaults.standard.getString("names") ?: "Guest"
+        return app.reportamelo.commons.AppPreferences.getString("names") ?: "Guest"
     }
 
     fun getName(): String {
-        val user = GIDSignIn.sharedInstance.currentUser
-        val profile = user?.profile ?: return getNames()
-        return profile.name
+        return getNames()
     }
 
     fun setNames(names: String) {
-        UserDefaults.standard.setString("names", names)
+        app.reportamelo.commons.AppPreferences.setString("names", names)
     }
 
     fun getUsername(): String {
-        return UserDefaults.standard.getString("user_name") ?: "guest"
+        return app.reportamelo.commons.AppPreferences.getString("user_name") ?: "guest"
     }
 
     fun setUsername(username: String) {
-        UserDefaults.standard.setString("user_name", username)
+        app.reportamelo.commons.AppPreferences.setString("user_name", username)
     }
 
     fun setAvatar(url: String) {
-        UserDefaults.standard.setString("avatar_url", url)
+        app.reportamelo.commons.AppPreferences.setString("avatar_url", url)
     }
 
     fun getPublicInformation(authMethod: AuthMethod): UserProfile? {
         if (authMethod == AuthMethod.GOOGLE) {
-            val user = GIDSignIn.sharedInstance.currentUser
-            val profile = user?.profile
-            val email = profile?.email
-            val username = profile?.name
-
-            if (user == null || profile == null || email == null || username == null || !profile.hasImage) {
-                return null
-            }
-
-            return UserProfile(
-                username = username,
-                avatar = profile.imageURL(withDimension = 200).toString(),
-                email = email,
-                profileId = ""
-            )
+            return null
         }
 
         if (authMethod == AuthMethod.APPLE) {
-            val email = KeychainService.getToken(KeychainToken.EMAIL)
-            val name = KeychainService.getToken(KeychainToken.NAME)
+            val email = LegacyKeychain.getToken(KeychainToken.EMAIL) ?: ""
+            val name = LegacyKeychain.getToken(KeychainToken.NAME) ?: ""
 
             return UserProfile(
                 username = name,
@@ -181,12 +163,12 @@ class UserRepository private constructor() {
     }
 
     fun getAvatar(): Uri? {
-        val urlStr = UserDefaults.standard.getString("avatar_url")
+        val urlStr = app.reportamelo.commons.AppPreferences.getString("avatar_url")
         if (urlStr.isNullOrEmpty()) return null
         if (urlStr.startsWith("http")) {
             return Uri.parse(urlStr)
         }
-        return getURL(from = urlStr)
+        return Uri.parse(urlStr)
     }
 
     suspend fun changeAvatar(image: Bitmap, from: AvatarCreatedFrom): String {
@@ -196,7 +178,7 @@ class UserRepository private constructor() {
 
         val result = service.changeAvatar(imageData, from)
 
-        if (result.code == "AVATAR_UPDATED") {
+        if (result.code.toString() == "AVATAR_UPDATED") {
             val avatarUrl = result.data.avatarUrl
             setAvatar(url = avatarUrl)
             return avatarUrl
@@ -208,13 +190,13 @@ class UserRepository private constructor() {
     suspend fun change(userName: String, completion: (Result<String>) -> Unit) {
         try {
             val result = service.change(userName, headers)
-            if (result.code == "USER_NAME_UPDATED") {
+            if (result.code.toString() == "USER_NAME_UPDATED") {
                 completion(Result.success(result.message))
             }
         } catch (genericResponse: ServiceError.BadRequest) {
-            when (genericResponse.code) {
-                "UPDATE_NAME_ERROR" -> completion(Result.failure(UserError.ServerError(genericResponse.message)))
-                else -> completion(Result.failure(UserError.UnknownError(genericResponse.message)))
+            when (genericResponse.response.code) {
+                "UPDATE_NAME_ERROR" -> completion(Result.failure(UserError.ServerError(genericResponse.response.message)))
+                else -> completion(Result.failure(UserError.UnknownError(genericResponse.response.message)))
             }
         } catch (e: Exception) {
             completion(Result.failure(UserError.UnknownError(e.localizedMessage ?: "Unknown error")))
@@ -224,14 +206,14 @@ class UserRepository private constructor() {
     suspend fun checkAvailability(userName: String, completion: (Result<String>) -> Unit) {
         try {
             val result = service.checkAvailability(userName, headers)
-            if (result.code == "USER_NAME_AVAILABLE") {
+            if (result.code.toString() == "USER_NAME_AVAILABLE") {
                 completion(Result.success(result.message))
             }
         } catch (genericResponse: ServiceError.BadRequest) {
-            when (genericResponse.code) {
+            when (genericResponse.response.code) {
                 "USER_NAME_TAKEN" -> completion(Result.failure(UserError.Taken))
                 "USER_NAME_INVALID" -> completion(Result.failure(UserError.InvalidUserName))
-                else -> completion(Result.failure(UserError.UnknownError(genericResponse.message)))
+                else -> completion(Result.failure(UserError.UnknownError(genericResponse.response.message)))
             }
         } catch (e: Exception) {
             completion(Result.failure(UserError.UnknownError(e.localizedMessage ?: "Unknown error")))
@@ -241,13 +223,13 @@ class UserRepository private constructor() {
     suspend fun modify(notifications: Notifications): Result<String> {
         try {
             val result = service.modify(notifications, headers)
-            if (result.code == "NOTIFICATIONS_UPDATED") {
+            if (result.code.toString() == "NOTIFICATIONS_UPDATED") {
                 return Result.success(result.message)
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.message)
             }
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
             throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network error")
         } catch (e: Exception) {
@@ -258,13 +240,13 @@ class UserRepository private constructor() {
     suspend fun completeLandingPage(): SuccessfulResult {
         try {
             val result = service.completeLandingPage()
-            if (result.code == "LANDING_COMPLETED_UPDATED") {
+            if (result.code.toString() == "LANDING_COMPLETED_UPDATED") {
                 return SuccessfulResult.DONE
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.message)
             }
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
             throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network error")
         } catch (e: Exception) {
@@ -274,7 +256,7 @@ class UserRepository private constructor() {
 
     suspend fun sendDevice(token: String): SuccessfulResult {
         try {
-            val deviceId = DeviceService.shared.getDeviceId()
+            val deviceId = app.reportamelo.commons.DeviceService(android.content.Context.RECEIVER_NOT_EXPORTED as android.content.Context).getDeviceId()
             val deviceToken = DeviceTokenRequest(
                 deviceToken = token,
                 deviceId = deviceId,
@@ -282,7 +264,7 @@ class UserRepository private constructor() {
             )
 
             val result = service.send(deviceToken, headers)
-            if (result.code == "DEVICE_TOKEN_UPDATED") {
+            if (result.code.toString() == "DEVICE_TOKEN_UPDATED") {
                 return SuccessfulResult.DONE
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.code)
@@ -293,28 +275,28 @@ class UserRepository private constructor() {
     }
 
     fun userHasCompletedLandingPage(): Boolean {
-        val token = KeychainService.getToken(KeychainToken.DEVICE_ID)
+        val token = LegacyKeychain.getToken(KeychainToken.DEVICE_ID) ?: ""
         return token.contains("completion:state:successfully")
     }
 
     fun getAuthMethod(): AuthMethod? {
-        val token = KeychainService.getToken(KeychainToken.AUTH_METHOD)
+        val token = LegacyKeychain.getToken(KeychainToken.AUTH_METHOD) ?: ""
         if (token.isEmpty()) return null
         return AuthMethod.valueOf(token)
     }
 
     fun isSessionValid(): Boolean {
-        val token = KeychainService.getToken(KeychainToken.SESSION_STATE_VERIFICATION)
+        val token = LegacyKeychain.getToken(KeychainToken.SESSION_STATE_VERIFICATION) ?: ""
         return token.isNotEmpty() && token.contains("session:state:valid")
     }
 
     fun isGuestUser(): Boolean {
-        val token = KeychainService.getToken(KeychainToken.USER_TYPE)
+        val token = LegacyKeychain.getToken(KeychainToken.USER_TYPE) ?: ""
         return token == UserType.GUEST.name
     }
 
     fun isOwnProfile(profileId: String): Boolean {
-        val storedProfileId = KeychainService.getToken(KeychainToken.PROFILE_ID)
+        val storedProfileId = LegacyKeychain.getToken(KeychainToken.PROFILE_ID) ?: ""
         return storedProfileId.isNotEmpty() && storedProfileId == profileId
     }
 
@@ -329,7 +311,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -338,7 +320,7 @@ class UserRepository private constructor() {
     suspend fun updateDefaultReporting(cityId: String): SuccessfulResult {
         try {
             val result = service.defaultReportingCity(DefaultReportingCity(cityId), headers)
-            if (result.code == "DEFAULT_CITY_UPDATED") {
+            if (result.code.toString() == "DEFAULT_CITY_UPDATED") {
                 return SuccessfulResult.UPDATED
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.code)
@@ -348,7 +330,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -357,7 +339,7 @@ class UserRepository private constructor() {
     suspend fun reportUser(reason: BlockUserReason): SuccessfulResult {
         try {
             val result = service.reportUser(reason, headers)
-            if (result.code == "USER_REPORTED") {
+            if (result.code.toString() == "USER_REPORTED") {
                 return SuccessfulResult.UPDATED
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.code)
@@ -367,7 +349,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -376,7 +358,7 @@ class UserRepository private constructor() {
     suspend fun deleteMyAccount(): SuccessfulResult {
         try {
             val result = service.deleteMyAccount(headers)
-            if (result.code == "ACCOUNT_DELETED") {
+            if (result.code.toString() == "ACCOUNT_DELETED") {
                 return SuccessfulResult.UPDATED
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.code)
@@ -386,7 +368,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -401,14 +383,14 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
     }
 
     fun signOutFromGoogle() {
-        GIDSignIn.sharedInstance.signOut()
+        
     }
 
     suspend fun refresh() {
@@ -419,7 +401,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
             throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network error")
         } catch (e: Exception) {
@@ -435,7 +417,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -449,7 +431,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
             throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network error")
         } catch (e: Exception) {
@@ -465,7 +447,7 @@ class UserRepository private constructor() {
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.NotAuthorized
         } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.message)
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
             throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network error")
         } catch (e: Exception) {

@@ -7,7 +7,7 @@ import android.location.Location
 
 object GeoCodingRepository {
     
-    private val service = GeoCodingService()
+    private val service = GeoCodingService(android.content.Context.RECEIVER_NOT_EXPORTED as android.content.Context)
     
     suspend fun updateLocationDetails(location: Location) {
         // Implementation from Swift was empty, left empty here

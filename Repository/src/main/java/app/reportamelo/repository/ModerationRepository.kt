@@ -6,18 +6,17 @@ import app.reportamelo.network.*
 
 object ModerationRepository {
 
-    private val service = ModerationService()
-    var headers = listOf(
-        HTTPHeader("Client-Type", "Mobile-App"),
-        HTTPHeader("CountryCode", "SV"),
-        HTTPHeader("CityId", "san-salvador")
+    private val service = app.reportamelo.network.services.ModerationService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
+    var headers = mapOf(
+        "CountryCode" to "SV",
+        "CityId" to "san-salvador"
     )
 
     suspend fun myComplaints(): PaginatedResponse<ReportViolation<ModeratedContent>> {
         return try {
             service.myComplaints(headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -33,7 +32,7 @@ object ModerationRepository {
         return try {
             service.indictedModeratedContent(type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -49,7 +48,7 @@ object ModerationRepository {
         return try {
             service.indictedModeratedMessages(type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -65,7 +64,7 @@ object ModerationRepository {
         return try {
             service.moderateContent(reason, type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -81,7 +80,7 @@ object ModerationRepository {
         return try {
             service.moderateComment(reason, type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -97,7 +96,7 @@ object ModerationRepository {
         return try {
             service.moderateAccount(reason, type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -113,7 +112,7 @@ object ModerationRepository {
         return try {
             service.appeal(id, type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -129,7 +128,7 @@ object ModerationRepository {
         return try {
             service.remove(id, type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -143,9 +142,9 @@ object ModerationRepository {
 
     suspend fun indictedModeratedContent(): PaginatedResponse<ReportViolation<ModeratedContent>> {
         return try {
-            service.indictedModeratedContent(headers)
+            service.indictedModeratedContentAll(headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {
@@ -161,7 +160,7 @@ object ModerationRepository {
         return try {
             service.moderateReport(reason, type, headers)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.result.code)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
         } catch (e: ServiceError.NotFound) {
             throw CommonIntercommunicationErrors.NotFound
         } catch (e: ServiceError.ServerError) {

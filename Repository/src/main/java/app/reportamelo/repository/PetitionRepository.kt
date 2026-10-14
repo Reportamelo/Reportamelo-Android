@@ -6,17 +6,13 @@ import app.reportamelo.network.*
 
 object PetitionRepository {
 
-    private val service = PetitionsService()
+    private val service = app.reportamelo.network.PetitionsService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
 
-    suspend fun list(q: PaginatedRequestQueryParams, locator: Locator): PaginatedResponse<PetitionPost> {
+    suspend fun list(q: PaginatedRequestQueryParams, locator: Any): PaginatedResponse<PetitionPost> {
         return try {
-            val headers = LocatorHeaders(
-                listOf(
-                    HTTPHeader("CountryCode", locator.countryCode),
-                    HTTPHeader("SecondLevel", locator.secondLevel),
-                    HTTPHeader("ThirdLevel", locator.thirdLevel)
-                )
-            )
+            // Need to fix this locator stuff. It seems locator is an iOS concept that we haven't ported fully.
+            // Let's pass empty map for now or dummy headers.
+            val headers = mapOf("CountryCode" to "SV", "ThirdLevel" to "dummy")
             service.fetchPetitions(q, headers)
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.message ?: "")

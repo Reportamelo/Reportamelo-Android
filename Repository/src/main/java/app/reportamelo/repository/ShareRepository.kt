@@ -3,38 +3,22 @@ package app.reportamelo.repository
 import app.reportamelo.models.*
 import app.reportamelo.commons.*
 import app.reportamelo.network.*
+import app.reportamelo.network.services.*
 
 object ShareRepository {
     private val service = ShareService()
 
-    suspend fun createShareableLink(model: ReportDataModel): String {
+    suspend fun createShareableLink(payload: ReportToShare): String {
         return try {
-            val reportId = model.buildReportId()
-
-            val payload = ReportToShare(
-                reportId = reportId,
-                title = model.report.title,
-                city = model.locator.thirdLevel,
-                country = model.locator.firstLevel,
-                description = model.report.description,
-                severity = model.report.severity.title,
-                issueType = model.report.issueType.title,
-                status = model.report.status.title,
-                coordinate = model.report.coordinate,
-                cellIndex = model.report.cellIndex,
-                openCodeLocation = model.report.olc ?: "",
-                attachments = model.report.attachments
-            )
-
-            val share = Share(payload, type = ShareType.report, lang = "es-419")
+            val share = Share(payload, shareType = ShareType.report, lang = "es-419")
 
             val result = service.createLink(
                 share,
-                headers = listOf(HTTPHeader("CountryCode", "SV"))
+                headers = mapOf("CountryCode" to "SV")
             )
 
             if (result.code == "SHARE_GENERATED") {
-                result.data.shareUrl
+                result.data?.shareUrl ?: throw CommonIntercommunicationErrors.GenericError("Missing shareUrl")
             } else {
                 throw CommonIntercommunicationErrors.InvalidPetition(result.code)
             }

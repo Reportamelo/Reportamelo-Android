@@ -1,53 +1,21 @@
 package app.reportamelo.repository
 
-import app.reportamelo.commons.*
 import app.reportamelo.models.*
+import app.reportamelo.commons.*
 import app.reportamelo.network.*
 
 object InsightsRepository {
-    
-    val service: InsightsService = InsightsService()
-    
-    suspend fun initialize(): SuccessfulResult {
+
+    private val service = app.reportamelo.network.InsightsService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
+    var headers = mapOf("CountryCode" to "SV", "CityId" to "san-salvador")
+
+    suspend fun getMonthlyInsights(filter: InsightsFilter): MonthlyInsightsResponse {
         return try {
-            val response = service.initialize()
-            if (response.code == "USER_INSIGHTS_INITIALIZED") {
-                SuccessfulResult.CREATED
-            } else {
-                throw CommonIntercommunicationErrors.InvalidPetition(response.message)
-            }
-        } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.error.message)
-        } catch (e: ServiceError.Unauthorized) {
-            throw CommonIntercommunicationErrors.NotAuthorized
-        } catch (e: ServiceError.Forbidden) {
-            throw CommonIntercommunicationErrors.NotAuthorized
-        } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.error)
-        } catch (e: Exception) {
-            throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "")
-        }
-    }
-    
-    suspend fun insightsForThisMonth(): MonthlyInsightsResponse {
-        return try {
-            // Assuming getFullYear() and getMonthName() are utility functions available globally
-            val filter = InsightsFilter(year = getFullYear(), month = getMonthName())
             service.getMonthlyInsights(filter)
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.error.message)
-        } catch (e: ServiceError.Unauthorized) {
-            throw CommonIntercommunicationErrors.NotAuthorized
-        } catch (e: ServiceError.Forbidden) {
-            throw CommonIntercommunicationErrors.NotAuthorized
-        } catch (e: ServiceError.ServerError) {
-            throw CommonIntercommunicationErrors.ServerError(e.error)
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: Exception) {
-            throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "")
+            throw CommonIntercommunicationErrors.GenericError(e.message ?: "")
         }
-    }
-    
-    suspend fun filterInsights(filter: InsightsFilter): MonthlyInsightsResponse {
-        return service.getMonthlyInsights(filter)
     }
 }
