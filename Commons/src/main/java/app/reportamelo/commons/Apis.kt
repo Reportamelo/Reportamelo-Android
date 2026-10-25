@@ -3,7 +3,10 @@ package app.reportamelo.commons
 import app.reportamelo.commons.BuildConfig
 
 object Apis {
-    val USER_AGENT = "Reportamelo/1.0"
+    const val USER_AGENT = "Reportamelo/1.0"
+    const val CLIENT_TYPE_HEADER = "Client-Type"
+    const val CLIENT_TYPE_ANDROID = "Mobile-App"
+    const val GOOGLE_WEB_CLIENT_ID = "214707515100-7mdic324baf7jnkeo22jbpsn2ahqijdp.apps.googleusercontent.com"
 
     val baseURL: String
         get() = "https://${BuildConfig.API_URL}"

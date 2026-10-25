@@ -1,24 +1,58 @@
 package app.reportamelo.commons.utils
 
-import java.util.Date
+import app.reportamelo.commons.AppPreferences
 
 object SubscriptionManager {
     fun checkEntitlement() {}
 }
-enum class KeychainToken { PLAN_TYPE }
-object KeychainService {
-    fun getToken(token: KeychainToken): String = ""
-    fun save(key: KeychainKey, value: String) {}
-    fun save(value: String) {}
-    fun deleteToken(key: KeychainKey) {}
+
+enum class KeychainToken {
+    PLAN_TYPE,
+    EMAIL,
+    NAME,
+    AUTH_METHOD,
+    MUTATION,
+    USER_ID,
+    PROFILE_ID,
+    USER_TYPE,
+    SESSION_STATE_VERIFICATION,
+    QUERY,
+    DEVICE_ID,
+    LANDING_PAGE_COMPLETE
 }
 
+object KeychainService {
+    fun getToken(token: KeychainToken): String = AppPreferences.getString(token.name) ?: ""
+    fun getToken(key: KeychainKey): String = AppPreferences.getString(key.name) ?: ""
+    fun save(key: KeychainKey, value: String) {
+        AppPreferences.setString(key.name, value)
+    }
+    fun save(value: String) {
+        AppPreferences.setString(KeychainKey.MUTATION.name, value)
+    }
+    fun deleteToken(key: KeychainKey) {
+        AppPreferences.remove(key.name)
+    }
+}
 
-enum class KeychainKey { EMAIL, NAME, AUTH_METHOD, MUTATION, USER_ID, PROFILE_ID, USER_TYPE, PLAN_TYPE, SESSION_STATE_VERIFICATION, QUERY, DEVICE_ID, LANDING_PAGE_COMPLETE }
+enum class KeychainKey {
+    EMAIL,
+    NAME,
+    AUTH_METHOD,
+    MUTATION,
+    USER_ID,
+    PROFILE_ID,
+    USER_TYPE,
+    PLAN_TYPE,
+    SESSION_STATE_VERIFICATION,
+    QUERY,
+    DEVICE_ID,
+    LANDING_PAGE_COMPLETE
+}
 
 object KeychainServiceMock {
-    fun getToken(token: KeychainToken): String = ""
-    fun save(key: KeychainKey, value: String) {}
-    fun save(value: String) {}
-    fun deleteToken(key: KeychainKey) {}
+    fun getToken(token: KeychainToken): String = KeychainService.getToken(token)
+    fun save(key: KeychainKey, value: String) = KeychainService.save(key, value)
+    fun save(value: String) = KeychainService.save(value)
+    fun deleteToken(key: KeychainKey) = KeychainService.deleteToken(key)
 }

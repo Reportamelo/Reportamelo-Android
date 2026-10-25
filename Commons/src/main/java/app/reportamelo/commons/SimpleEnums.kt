@@ -1,5 +1,7 @@
 package app.reportamelo.commons
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 enum class ViewOptions(val value: String) {
     LIST("list"),
@@ -54,15 +56,17 @@ enum class UserNameState {
     ERROR
 }
 
+@Serializable
 enum class InteractionType(val value: String) {
-    VIEW_AD("viewAd"),
-    PAID_A_SUBSCRIPTION("paidASubscription"),
-    NO_THANKS("noThanks")
+    @SerialName("viewAd") VIEW_AD("viewAd"),
+    @SerialName("paidASubscription") PAID_A_SUBSCRIPTION("paidASubscription"),
+    @SerialName("noThanks") NO_THANKS("noThanks")
 }
 
+@Serializable
 enum class PlanType(val value: String) {
-    FREEMIUM("freemium"),
-    PAID("paid"),
-    REVENUE_AD("revenueAd"),
-    FREEMIUM_FOR_GUESTS("freemiumForGuests")
+    @SerialName("freemium") FREEMIUM("freemium"),
+    @SerialName("paid") PAID("paid"),
+    @SerialName("revenueAd") REVENUE_AD("revenueAd"),
+    @SerialName("freemiumForGuests") FREEMIUM_FOR_GUESTS("freemiumForGuests")
 }

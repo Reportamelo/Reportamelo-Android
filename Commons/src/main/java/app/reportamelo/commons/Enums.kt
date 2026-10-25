@@ -1,5 +1,8 @@
 package app.reportamelo.commons
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 enum class Severity(val title: String, val identifier: Int) {
     ALL("All", 0),
     LOW("Low", 1),
@@ -45,96 +48,115 @@ enum class OrderFilter(val title: String, val filter: String) {
     DESCENDING("Newest to Oldest", "desc")
 }
 
+@Serializable
 enum class AttachmentType(val value: String) {
-    IMAGE("image"),
-    VIDEO("video"),
-    DOCUMENT("document")
+    @SerialName("image") IMAGE("image"),
+    @SerialName("video") VIDEO("video"),
+    @SerialName("document") DOCUMENT("document")
 }
 
+@Serializable
 enum class AttachmentValidatedBy(val value: String) {
-    BOT("bot"),
-    MUNICIPALITY("municipality"),
-    CITIZEN("citizen"),
-    MANUALLY("manually")
+    @SerialName("bot") BOT("bot"),
+    @SerialName("municipality") MUNICIPALITY("municipality"),
+    @SerialName("citizen") CITIZEN("citizen"),
+    @SerialName("manually") MANUALLY("manually")
 }
 
+@Serializable
 enum class ReportAttachmentState(val value: String) {
-    CONFIRMED("confirmed"),
-    PENDING("pending"),
-    INAPPROPRIATE("inappropriate"),
-    DELETED("deleted"),
-    MANUAL_REVISION("manualRevision")
+    @SerialName("confirmed") CONFIRMED("confirmed"),
+    @SerialName("pending") PENDING("pending"),
+    @SerialName("inappropriate") INAPPROPRIATE("inappropriate"),
+    @SerialName("deleted") DELETED("deleted"),
+    @SerialName("manualRevision") MANUAL_REVISION("manualRevision")
 }
 
-enum class VotingType(val description: String) {
-    REPORT("Report"),
-    PETITION("Petition")
+@Serializable
+enum class VotingType(val description: String, val rawValue: String = description.lowercase()) {
+    @SerialName("report") REPORT("Report", "report"),
+    @SerialName("petition") PETITION("Petition", "petition")
 }
 
-enum class AvatarCreatedFrom {
-    OPTIONS_SELECTOR, AVATAR, CAMERA, PHOTO, INITIALS, MONOGRAM, GOOGLE_AUTH, MEMOJI
+@Serializable
+enum class AvatarCreatedFrom(val rawValue: String) {
+    @SerialName("optionsSelector") OPTIONS_SELECTOR("optionsSelector"),
+    @SerialName("avatar") AVATAR("avatar"),
+    @SerialName("camera") CAMERA("camera"),
+    @SerialName("photo") PHOTO("photo"),
+    @SerialName("initials") INITIALS("initials"),
+    @SerialName("monogram") MONOGRAM("monogram"),
+    @SerialName("GoogleAuth") GOOGLE_AUTH("GoogleAuth"),
+    @SerialName("Memoji") MEMOJI("Memoji")
 }
 
+@Serializable
 enum class UserType(val description: String) {
-    GUEST("Guest"),
-    CITIZEN("Citizen"),
-    GOVERNMENT("Government")
+    @SerialName("guest") GUEST("Guest"),
+    @SerialName("citizen") CITIZEN("Citizen"),
+    @SerialName("government") GOVERNMENT("Government")
 }
 
 
+@Serializable
 enum class Categories(val title: String, val identifier: Int, val minimumAmountOfSignatures: Int) {
-    ALL("All", 0, 100),
-    PREVENTION("Prevention", 1, 10),
-    CORRECTIVE("Corrective", 2, 10),
-    REPAIR("Repair", 3, 20),
-    REPLACEMENT("Replacement", 4, 20),
-    CONSTRUCTION("Construction", 5, 50),
-    INSTALLATION("Installation", 6, 40),
-    INSPECTION("Inspection", 7, 20),
-    EMERGENCY("Emergency", 8, 5);
+    @SerialName("all") ALL("All", 0, 100),
+    @SerialName("prevention") PREVENTION("Prevention", 1, 10),
+    @SerialName("corrective") CORRECTIVE("Corrective", 2, 10),
+    @SerialName("repair") REPAIR("Repair", 3, 20),
+    @SerialName("replacement") REPLACEMENT("Replacement", 4, 20),
+    @SerialName("construction") CONSTRUCTION("Construction", 5, 50),
+    @SerialName("installation") INSTALLATION("Installation", 6, 40),
+    @SerialName("inspection") INSPECTION("Inspection", 7, 20),
+    @SerialName("emergency") EMERGENCY("Emergency", 8, 5);
 
     companion object {
         fun fromIdentifier(id: Int): Categories = entries.find { it.identifier == id } ?: ALL
     }
 }
 
+@Serializable
 enum class CountryCode(val iso3166Alpha3Code: String, val countryName: String) {
-    SV("SLV", "El Salvador"),
-    US("USA", "United States"),
-    GT("GTM", "Guatemala"),
-    NI("NIC", "Nicaragua")
+    @SerialName("SV") SV("SLV", "El Salvador"),
+    @SerialName("US") US("USA", "United States"),
+    @SerialName("GT") GT("GTM", "Guatemala"),
+    @SerialName("NI") NI("NIC", "Nicaragua")
 }
 
+@Serializable
 enum class PetitionState(val description: String) {
-    NEW("New"),
-    MODIFYING("Modifying"),
-    VOTING("Voting"),
-    CLOSED("Closed"),
-    REJECTED("Rejected"),
-    RESOLVED("Resolved"),
-    CANCELLED("Cancelled")
+    @SerialName("new") NEW("New"),
+    @SerialName("modifying") MODIFYING("Modifying"),
+    @SerialName("voting") VOTING("Voting"),
+    @SerialName("closed") CLOSED("Closed"),
+    @SerialName("rejected") REJECTED("Rejected"),
+    @SerialName("resolved") RESOLVED("Resolved"),
+    @SerialName("cancelled") CANCELLED("Cancelled")
 }
 
+@Serializable
 enum class PostVisibility(val description: String) {
-    HIDDEN("Hidden"),
-    DRAFT("Draft"),
-    PUBLISHED("Published")
+    @SerialName("hidden") HIDDEN("Hidden"),
+    @SerialName("draft") DRAFT("Draft"),
+    @SerialName("published") PUBLISHED("Published")
 }
 
-enum class TypeOfContentToReport(val description: String) {
-    IMAGE("Image"),
-    REPORT("Report"),
-    VIDEO("Video"),
-    COMMENT("Comment"),
-    PETITION("Petition"),
-    ACCOUNT("Account")
+@Serializable
+enum class TypeOfContentToReport(val description: String, val rawValue: String = description.lowercase()) {
+    @SerialName("image") IMAGE("Image", "image"),
+    @SerialName("report") REPORT("Report", "report"),
+    @SerialName("video") VIDEO("Video", "video"),
+    @SerialName("comment") COMMENT("Comment", "comment"),
+    @SerialName("petition") PETITION("Petition", "petition"),
+    @SerialName("account") ACCOUNT("Account", "account")
 }
 
+@Serializable
 enum class ReportViolationStatus(val description: String) {
-    APPROVED("Approved"),
-    REJECTED("Rejected"),
-    PENDING("Pending"),
-    APPEALING("Appealing"),
-    SENT_TO_MODERATION("Sent to Moderation"),
-    REMOVED("Removed")
+    @SerialName("approved") APPROVED("Approved"),
+    @SerialName("rejected") REJECTED("Rejected"),
+    @SerialName("pending") PENDING("Pending"),
+    @SerialName("appealing") APPEALING("Appealing"),
+    @SerialName("sentToModeration") SENT_TO_MODERATION("Sent to Moderation"),
+    @SerialName("removed") REMOVED("Removed")
 }
