@@ -28,6 +28,37 @@ object AppPreferences {
         sharedPreferences?.edit()?.putString(key, value)?.apply()
     }
 
+    fun hasKey(key: String): Boolean {
+        return memoryStore.containsKey(key) || (sharedPreferences?.contains(key) == true)
+    }
+
+    fun getDouble(key: String, default: Double = 0.0): Double {
+        val raw = getString(key) ?: return default
+        return raw.toDoubleOrNull() ?: default
+    }
+
+    fun setDouble(key: String, value: Double) {
+        setString(key, value.toString())
+    }
+
+    fun getInt(key: String, default: Int = 0): Int {
+        val raw = getString(key) ?: return sharedPreferences?.getInt(key, default) ?: default
+        return raw.toIntOrNull() ?: default
+    }
+
+    fun setInt(key: String, value: Int) {
+        setString(key, value.toString())
+    }
+
+    fun getBoolean(key: String, default: Boolean = false): Boolean {
+        val raw = getString(key) ?: return sharedPreferences?.getBoolean(key, default) ?: default
+        return raw.toBooleanStrictOrNull() ?: default
+    }
+
+    fun setBoolean(key: String, value: Boolean) {
+        setString(key, value.toString())
+    }
+
     fun remove(key: String) {
         memoryStore.remove(key)
         sharedPreferences?.edit()?.remove(key)?.apply()

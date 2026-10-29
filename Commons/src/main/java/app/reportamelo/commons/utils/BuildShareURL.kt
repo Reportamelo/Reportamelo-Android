@@ -1,16 +1,25 @@
 package app.reportamelo.commons.utils
 
 import android.net.Uri
+import app.reportamelo.commons.Apis
 
 enum class ShareType(val value: String) {
     REPORT("report"),
     PETITION("petition")
 }
 
-// Assuming Endpoints is available in the project. If not, this is a placeholder.
 object EndpointsStub {
-    const val baseURL = "https://example.com/api"
-    const val shareableURL = "https://example.com/share"
+    val baseURL: String get() = Apis.baseURL
+    val shareableURL: String get() = Apis.shareableURL
+}
+
+fun resolveUrlString(string: String): String? {
+    val trimmed = string.trim()
+    if (trimmed.isEmpty()) return null
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed
+    }
+    return "${Apis.baseURL.trimEnd('/')}/${trimmed.trimStart('/')}"
 }
 
 fun buildShareURLWithComponents(index: String, type: ShareType, slug: String): Uri? {

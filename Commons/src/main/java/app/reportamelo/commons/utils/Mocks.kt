@@ -3,7 +3,13 @@ package app.reportamelo.commons.utils
 import app.reportamelo.commons.AppPreferences
 
 object SubscriptionManager {
-    fun checkEntitlement() {}
+    var mockIsPro: Boolean = false
+
+    fun checkEntitlement() {
+        if (mockIsPro) {
+            KeychainService.save(KeychainKey.PLAN_TYPE, "pro")
+        }
+    }
 }
 
 enum class KeychainToken {
