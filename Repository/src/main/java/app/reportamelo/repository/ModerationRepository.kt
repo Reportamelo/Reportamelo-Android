@@ -6,8 +6,9 @@ import app.reportamelo.network.*
 
 object ModerationRepository {
 
-    private val service = app.reportamelo.network.services.ModerationService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
+    private val service = app.reportamelo.network.services.ModerationService(app.reportamelo.network.ServiceClient(Apis.apiV1))
     var headers = mapOf(
+        Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID,
         "CountryCode" to "SV",
         "CityId" to "san-salvador"
     )

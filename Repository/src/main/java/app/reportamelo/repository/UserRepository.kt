@@ -43,33 +43,45 @@ sealed class ReportError : Exception() {
     object NoCityIdentifier : ReportError()
 }
 
-class UserRepository private constructor() {
+class UserRepository() {
 
     companion object {
         val shared = UserRepository()
     }
 
-    var service: UserService = app.reportamelo.network.services.UserService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
+    var service: UserService = app.reportamelo.network.services.UserService(app.reportamelo.network.ServiceClient(Apis.apiV1))
     var headers: Map<String, String> = mapOf(
-        "Client-Type" to "Mobile-App",
+        Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID,
         "CountryCode" to "SV",
         "CityId" to "a67b90f9-1d76-4835-a994-03cd04f1d619"
     )
 
     suspend fun login(token: String): Triple<UserOAuthResultState, String, PublicUserData> {
         return try {
-            val result = service.login(OAuthSignInPayload(token), headers)
+            var localHeaders: Map<String, String> = mapOf(
+                "CountryCode" to "SV",
+                "CityId" to "a67b90f9-1d76-4835-a994-03cd04f1d619",
+                Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_APP,
+                "User-Agent" to "Reportamelo/1.0"
+            )
+            val result = service.login(OAuthSignInPayload(token), localHeaders)
+            val publicUserData = result.publicUserData
+                ?: throw CommonIntercommunicationErrors.InvalidPetition(result.code)
             when (result.code) {
-                "TOKEN_GENERATED" -> Triple(UserOAuthResultState.EXISTING, result.authSessionId, result.publicUserData)
-                "USER_CREATED_WITH_TOKEN" -> Triple(UserOAuthResultState.FIRST_LOGIN, result.authSessionId, result.publicUserData)
+                "TOKEN_GENERATED" -> Triple(UserOAuthResultState.EXISTING, result.authSessionId, publicUserData)
+                "USER_CREATED_WITH_TOKEN" -> Triple(UserOAuthResultState.FIRST_LOGIN, result.authSessionId, publicUserData)
                 else -> throw CommonIntercommunicationErrors.InvalidPetition(result.code)
             }
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
         } catch (e: ServiceError.BadRequest) {
             throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.Forbidden(e.response.code)
         } catch (e: ServiceError.ServerError) {
             throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
+        } catch (e: ServiceError.NetworkError) {
+            throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -78,17 +90,23 @@ class UserRepository private constructor() {
     suspend fun signInOrLoginWithApple(payload: AuthPayload): Triple<UserOAuthResultState, String, PublicUserData> {
         return try {
             val result = service.signInOrLoginWithApple(payload, headers)
+            val publicUserData = result.publicUserData
+                ?: throw CommonIntercommunicationErrors.InvalidPetition(result.code)
             when (result.code) {
-                "TOKEN_GENERATED" -> Triple(UserOAuthResultState.EXISTING, result.authSessionId, result.publicUserData)
-                "USER_CREATED_WITH_TOKEN" -> Triple(UserOAuthResultState.FIRST_LOGIN, result.authSessionId, result.publicUserData)
+                "TOKEN_GENERATED" -> Triple(UserOAuthResultState.EXISTING, result.authSessionId, publicUserData)
+                "USER_CREATED_WITH_TOKEN" -> Triple(UserOAuthResultState.FIRST_LOGIN, result.authSessionId, publicUserData)
                 else -> throw CommonIntercommunicationErrors.InvalidPetition(result.code)
             }
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
         } catch (e: ServiceError.BadRequest) {
             throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: ServiceError.Forbidden) {
             throw CommonIntercommunicationErrors.Forbidden(e.response.code)
         } catch (e: ServiceError.ServerError) {
             throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
+        } catch (e: ServiceError.NetworkError) {
+            throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -97,11 +115,19 @@ class UserRepository private constructor() {
     suspend fun loginAsGuest(): Pair<UserOAuthResultState, String> {
         return try {
             val result = service.loginAsGuest(headers)
-            if (result.code.toString() == "GUEST_SESSION_CREATED") {
+            if (result.code == "GUEST_SESSION_CREATED") {
                 Pair(UserOAuthResultState.INEXISTENT, result.authSessionId)
             } else {
                 throw CommonIntercommunicationErrors.GenericError(result.code)
             }
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
+        } catch (e: ServiceError.Unprocessable) {
+            throw CommonIntercommunicationErrors.UnProcessable
+        } catch (e: ServiceError.ServerError) {
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
+        } catch (e: ServiceError.NetworkError) {
+            throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network Error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -112,10 +138,7 @@ class UserRepository private constructor() {
     }
 
     fun getProfilePictureURL(): Uri? {
-        
-        
-        
-        return null
+        return getAvatar()
     }
 
     fun getNames(): String {
@@ -165,10 +188,12 @@ class UserRepository private constructor() {
     fun getAvatar(): Uri? {
         val urlStr = app.reportamelo.commons.AppPreferences.getString("avatar_url")
         if (urlStr.isNullOrEmpty()) return null
-        if (urlStr.startsWith("http")) {
-            return Uri.parse(urlStr)
+        val resolvedUrl = if (urlStr.startsWith("http")) {
+            urlStr
+        } else {
+            "${Apis.baseURL}/${urlStr.trimStart('/')}"
         }
-        return Uri.parse(urlStr)
+        return Uri.parse(resolvedUrl)
     }
 
     suspend fun changeAvatar(image: Bitmap, from: AvatarCreatedFrom): String {
@@ -256,7 +281,7 @@ class UserRepository private constructor() {
 
     suspend fun sendDevice(token: String): SuccessfulResult {
         try {
-            val deviceId = app.reportamelo.commons.DeviceService(android.content.Context.RECEIVER_NOT_EXPORTED as android.content.Context).getDeviceId()
+            val deviceId = AppPreferences.appContext?.let { DeviceService(it).getDeviceId() } ?: ""
             val deviceToken = DeviceTokenRequest(
                 deviceToken = token,
                 deviceId = deviceId,
@@ -275,14 +300,18 @@ class UserRepository private constructor() {
     }
 
     fun userHasCompletedLandingPage(): Boolean {
-        val token = LegacyKeychain.getToken(KeychainToken.DEVICE_ID) ?: ""
-        return token.contains("completion:state:successfully")
+        val landingToken = LegacyKeychain.getToken(KeychainToken.LANDING_PAGE_COMPLETE) ?: ""
+        val deviceToken = LegacyKeychain.getToken(KeychainToken.DEVICE_ID) ?: ""
+        return landingToken.contains("completion:state:successfully") ||
+            deviceToken.contains("completion:state:successfully")
     }
 
     fun getAuthMethod(): AuthMethod? {
         val token = LegacyKeychain.getToken(KeychainToken.AUTH_METHOD) ?: ""
         if (token.isEmpty()) return null
-        return AuthMethod.valueOf(token)
+        return AuthMethod.entries.firstOrNull {
+            it.name.equals(token, ignoreCase = true) || it.value.equals(token, ignoreCase = true)
+        }
     }
 
     fun isSessionValid(): Boolean {
@@ -292,7 +321,8 @@ class UserRepository private constructor() {
 
     fun isGuestUser(): Boolean {
         val token = LegacyKeychain.getToken(KeychainToken.USER_TYPE) ?: ""
-        return token == UserType.GUEST.name
+        return token.equals(UserType.GUEST.name, ignoreCase = true) ||
+            token.equals(UserType.GUEST.description, ignoreCase = true)
     }
 
     fun isOwnProfile(profileId: String): Boolean {

@@ -6,7 +6,7 @@ import app.reportamelo.network.*
 import app.reportamelo.network.CounterService
 
 object CounterRepository {
-    private val service = CounterService(ServiceClient("https://api.reportamelo.app/v1/"))
+    private val service = CounterService(ServiceClient(Apis.apiV1))
 
     suspend fun getCount(): CustomizedResponse<ReportCounter> {
         return try {

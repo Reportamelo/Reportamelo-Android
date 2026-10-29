@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.flow
 typealias ErrorHandler = (Throwable) -> Unit
 
 object ReportRepository {
-    private val reportsService = app.reportamelo.network.ReportsService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
+    private val reportsService = app.reportamelo.network.ReportsService(app.reportamelo.network.ServiceClient(Apis.apiV1))
 
-    var headers = mapOf("Client-Type" to "Mobile-App", "CountryCode" to "SV")
+    var headers = mapOf(Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID, "CountryCode" to "SV")
 
     private val cachedReportsDAO = mutableMapOf<Int, PaginatedResponse<ReportDAO>>()
 

@@ -6,7 +6,7 @@ import app.reportamelo.network.*
 
 object PetitionRepository {
 
-    private val service = app.reportamelo.network.PetitionsService(app.reportamelo.network.ServiceClient("https://api.reportamelo.app/v1/"))
+    private val service = app.reportamelo.network.PetitionsService(app.reportamelo.network.ServiceClient(Apis.apiV1))
 
     suspend fun list(q: PaginatedRequestQueryParams, locator: Any): PaginatedResponse<PetitionPost> {
         return try {

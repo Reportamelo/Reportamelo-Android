@@ -7,7 +7,7 @@ import app.reportamelo.network.*
 object VotingRepository {
     private val service = VotingService()
     private val headers = mapOf(
-        "Client-Type" to "Mobile-App",
+        Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID,
         "CountryCode" to "SV"
     )
 
