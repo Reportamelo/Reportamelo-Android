@@ -1,6 +1,7 @@
 package app.reportamelo.network
 
 import app.reportamelo.models.*
+import kotlinx.serialization.json.JsonPrimitive
 
 class ReportsService(private val client: ServiceClient = ServiceClient(baseURL = app.reportamelo.commons.Apis.apiV1)) {
 
@@ -41,7 +42,7 @@ class ReportsService(private val client: ServiceClient = ServiceClient(baseURL =
                 reportedBy = report.reportedBy,
                 suggestedTitle = report.suggestedTitle,
                 suggestedDescription = report.suggestedDescription,
-                attachments = report.attachments,
+                attachments = report.attachments.map { JsonPrimitive(it) },
                 cityId = report.cityId,
                 reportContainer = report.reportContainer,
                 shareUrl = report.shareUrl,
@@ -130,7 +131,7 @@ class ReportsService(private val client: ServiceClient = ServiceClient(baseURL =
                 reportedBy = report.reportedBy,
                 suggestedTitle = report.suggestedTitle,
                 suggestedDescription = report.suggestedDescription,
-                attachments = report.attachments,
+                attachments = report.attachments.map { JsonPrimitive(it) },
                 cityId = report.cityId,
                 reportContainer = report.reportContainer,
                 shareUrl = report.shareUrl,

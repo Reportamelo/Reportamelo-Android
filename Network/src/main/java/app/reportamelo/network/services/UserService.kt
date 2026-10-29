@@ -1,5 +1,6 @@
 package app.reportamelo.network.services
 
+import app.reportamelo.commons.Apis
 import app.reportamelo.models.*
 import app.reportamelo.network.ServiceClient
 import app.reportamelo.network.MultipartFormFile
@@ -37,7 +38,12 @@ class UserService(private val client: ServiceClient) {
     }
 
     suspend fun completeLandingPage(): GenericResponse {
-        return client.patch("user/landing/completed", emptyMap<String, String>(), emptyMap(), withOAuth = true)
+        return client.patch(
+            "user/landing/completed",
+            emptyMap<String, String>(),
+            mapOf(Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID),
+            withOAuth = true
+        )
     }
 
     suspend fun send(deviceToken: DeviceTokenRequest, headers: Map<String, String>): GenericResponse {
@@ -63,14 +69,14 @@ class UserService(private val client: ServiceClient) {
         )
         
         val body = mapOf(
-            "avatarCreatedFrom" to from.name
+            "avatarCreatedFrom" to from.rawValue
         )
 
         return client.postMultipart(
             path = "user/change/avatar",
             body = body,
             files = files,
-            headers = mapOf("Client-Type" to "Mobile-App"),
+            headers = mapOf(Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID),
             withOAuth = true
         )
     }

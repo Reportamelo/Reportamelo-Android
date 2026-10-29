@@ -1,5 +1,6 @@
 package app.reportamelo.network
 
+import app.reportamelo.commons.Apis
 import app.reportamelo.models.GenericResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -13,7 +14,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readBytes
 import io.ktor.http.ContentType
 import io.ktor.http.URLBuilder
@@ -32,12 +32,16 @@ import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
 
 class ServiceClient(
     @PublishedApi internal val baseURL: String, // E.g., Apis.apiV1
-    @PublishedApi internal val decoderType: DecoderType = DecoderType.JSON
+    @PublishedApi internal val decoderType: DecoderType = DecoderType.JSON,
+    @PublishedApi internal val client: HttpClient = HttpClient(CIO)
 ) {
     @PublishedApi
-    internal val client = HttpClient(CIO)
-    @PublishedApi
-    internal val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    internal val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+        encodeDefaults = true
+    }
     
     @PublishedApi
     internal fun getOAuthHeader(): Pair<String, String> {
@@ -67,12 +71,18 @@ class ServiceClient(
     }
 
     @PublishedApi
-    internal suspend inline fun <reified T> decodeResponse(response: HttpResponse): T {
-        val bytes = response.readBytes()
+    internal inline fun <reified T> decodeResponse(bytes: ByteArray): T {
         return when (decoderType) {
             DecoderType.JSON -> {
                 val text = bytes.decodeToString()
-                json.decodeFromString<T>(text)
+                try {
+                    json.decodeFromString<T>(text)
+                } catch (e: Exception) {
+                    runCatching {
+                        android.util.Log.e("ServiceClient", "JSON decode error for ${T::class.simpleName}: ${e.message} | Body: $text", e)
+                    }
+                    throw e
+                }
             }
             DecoderType.MESSAGE_PACK -> {
                 MsgPack.decodeFromByteArray(serializer<T>(), bytes) as T
@@ -85,6 +95,9 @@ class ServiceClient(
         if (response.status.isSuccess()) return
 
         val text = bytes.decodeToString()
+        runCatching {
+            android.util.Log.e("ServiceClient", "HTTP ${response.status.value} error: $text")
+        }
         val genericResponse = try {
             json.decodeFromString<GenericResponse>(text)
         } catch (e: Exception) {
@@ -131,6 +144,9 @@ class ServiceClient(
                 else -> throw IllegalArgumentException("Method $method not supported")
             }
         } catch (e: Exception) {
+            runCatching {
+                android.util.Log.e("ServiceClient", "Network error on $method $url: ${e.message}", e)
+            }
             throw ServiceError.NetworkError(e)
         }
 
@@ -141,7 +157,7 @@ class ServiceClient(
             return Unit as? T ?: throw ServiceError.InvalidResponse
         }
 
-        return decodeResponse(response)
+        return decodeResponse(bytes)
     }
 
     @PublishedApi
@@ -150,7 +166,7 @@ class ServiceClient(
         withOAuth: Boolean,
         builder: HttpRequestBuilder.() -> Unit
     ) {
-        header("User-Agent", "Reportamelo/1.0")
+        header("User-Agent", Apis.USER_AGENT)
         header("Accept-Language", "en-US")
 
         val blockedUsers = KeychainService.getArray("blockedUsers")
@@ -161,6 +177,10 @@ class ServiceClient(
         if (withOAuth) {
             val (key, value) = getOAuthHeader()
             header(key, value)
+        }
+
+        if (!headersMap.containsKey(Apis.CLIENT_TYPE_HEADER)) {
+            header(Apis.CLIENT_TYPE_HEADER, Apis.CLIENT_TYPE_ANDROID)
         }
 
         headersMap.forEach { (key, value) ->
@@ -281,7 +301,7 @@ class ServiceClient(
             return Unit as? V ?: throw ServiceError.InvalidResponse
         }
 
-        return decodeResponse(response)
+        return decodeResponse(bytes)
     }
 }
 

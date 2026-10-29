@@ -11,10 +11,10 @@ class VotingService(
     private val client: ServiceClient = ServiceClient(baseURL = Apis.apiV1)
 ) {
     suspend fun vote(votingType: VotingType, payload: Voting, headers: Map<String, String>): GenericResponse {
-        return client.post(path = "voting/${votingType.description}", body = payload, headers = headers, withOAuth = true)
+        return client.post(path = "voting/${votingType.rawValue}", body = payload, headers = headers, withOAuth = true)
     }
     
     suspend fun havIVoted(votingType: VotingType, resourceId: String, headers: Map<String, String>): CustomizedResponse<VotingResolution> {
-        return client.get(path = "voting/${votingType.description}/$resourceId", headers = headers, withOAuth = true)
+        return client.get(path = "voting/${votingType.rawValue}/$resourceId", headers = headers, withOAuth = true)
     }
 }

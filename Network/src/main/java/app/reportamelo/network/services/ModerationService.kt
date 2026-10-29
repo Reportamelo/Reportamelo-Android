@@ -7,19 +7,19 @@ import app.reportamelo.network.ServiceClient
 class ModerationService(private val client: ServiceClient) {
 
     suspend fun moderateReport(reason: ReportViolation<MapExplorerReport>, type: TypeOfContentToReport, headers: Map<String, String>): GenericResponse {
-        return client.post("user-generated-content/moderation/${type.name}", reason, headers, withOAuth = true)
+        return client.post("user-generated-content/moderation/${type.rawValue}", reason, headers, withOAuth = true)
     }
 
     suspend fun moderateContent(reason: ReportViolation<PreviewAttachment>, type: TypeOfContentToReport, headers: Map<String, String>): GenericResponse {
-        return client.post("user-generated-content/moderation/${type.name}", reason, headers, withOAuth = true)
+        return client.post("user-generated-content/moderation/${type.rawValue}", reason, headers, withOAuth = true)
     }
 
     suspend fun moderateComment(reason: ReportViolation<CommentToBlock>, type: TypeOfContentToReport, headers: Map<String, String>): GenericResponse {
-        return client.post("user-generated-content/moderation/${type.name}", reason, headers, withOAuth = true)
+        return client.post("user-generated-content/moderation/${type.rawValue}", reason, headers, withOAuth = true)
     }
 
     suspend fun moderateAccount(reason: ReportViolation<User>, type: TypeOfContentToReport, headers: Map<String, String>): GenericResponse {
-        return client.post("user-generated-content/moderation/${type.name}", reason, headers, withOAuth = true)
+        return client.post("user-generated-content/moderation/${type.rawValue}", reason, headers, withOAuth = true)
     }
 
     suspend fun myComplaints(headers: Map<String, String>): PaginatedResponse<ReportViolation<ModeratedContent>> {
@@ -27,11 +27,11 @@ class ModerationService(private val client: ServiceClient) {
     }
 
     suspend fun indictedModeratedContent(type: TypeOfContentToReport, headers: Map<String, String>): PaginatedResponse<ReportViolation<PreviewAttachment>> {
-        return client.get("user-generated-content/moderation/indicted/my-accusations/${type.name}", headers, withOAuth = true)
+        return client.get("user-generated-content/moderation/indicted/my-accusations/${type.rawValue}", headers, withOAuth = true)
     }
 
     suspend fun indictedModeratedMessages(type: TypeOfContentToReport, headers: Map<String, String>): PaginatedResponse<ReportViolation<CommentToBlock>> {
-        return client.get("user-generated-content/moderation/indicted/my-accusations/${type.name}", headers, withOAuth = true)
+        return client.get("user-generated-content/moderation/indicted/my-accusations/${type.rawValue}", headers, withOAuth = true)
     }
 
     suspend fun indictedModeratedContentAll(headers: Map<String, String>): PaginatedResponse<ReportViolation<ModeratedContent>> {
