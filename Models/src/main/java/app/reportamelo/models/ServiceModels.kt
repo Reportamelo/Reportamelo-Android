@@ -20,51 +20,51 @@ data class EmptyResponse(val ignored: String? = null) // Sometimes empty objects
 
 @Serializable
 data class Notifications(
-    val app: Boolean,
-    val email: Boolean,
-    val web: Boolean
+    val app: Boolean = false,
+    val email: Boolean = false,
+    val web: Boolean = false
 )
 
 @Serializable
 data class PrivacySettings(
-    val showMyProfile: Boolean,
-    val showMyUseNameWhenShare: Boolean
+    val showMyProfile: Boolean = true,
+    val showMyUseNameWhenShare: Boolean = true
 )
 
 @Serializable
 data class ReportLocatorSettings(
-    val countryCode: String,
-    val cityId: String
+    val countryCode: String = "",
+    val cityId: String = ""
 )
 
 @Serializable
 data class Settings(
-    val notifications: Notifications,
-    val privacySettings: PrivacySettings,
-    val avatarCreatedFrom: AvatarCreatedFrom,
-    val reportLocatorSettings: ReportLocatorSettings
+    val notifications: Notifications = Notifications(),
+    val privacySettings: PrivacySettings = PrivacySettings(),
+    val avatarCreatedFrom: AvatarCreatedFrom = AvatarCreatedFrom.OPTIONS_SELECTOR,
+    val reportLocatorSettings: ReportLocatorSettings = ReportLocatorSettings()
 )
 
 @Serializable
 data class PublicUserData(
-    val profileId: String,
-    val userId: String,
-    val userName: String,
-    val names: String,
-    val email: String,
-    val profilePicture: String,
-    val sessionDuration: Int,
-    val userType: UserType,
-    val settings: Settings,
-    val landingPageCompleted: Boolean
+    val profileId: String = "",
+    val userId: String = "",
+    val userName: String = "",
+    val names: String = "",
+    val email: String = "",
+    val profilePicture: String = "",
+    val sessionDuration: Int = 0,
+    val userType: UserType = UserType.GUEST,
+    val settings: Settings = Settings(),
+    val landingPageCompleted: Boolean = false
 )
 
 @Serializable
 data class LoginWithOAuthProviderResponse(
     val code: String,
     val authSessionId: String,
-    val authProvider: String,
-    val publicUserData: PublicUserData
+    val authProvider: String = "",
+    val publicUserData: PublicUserData? = null
 )
 
 @Serializable

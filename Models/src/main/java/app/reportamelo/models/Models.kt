@@ -2,6 +2,7 @@ package app.reportamelo.models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.JsonElement
 import app.reportamelo.commons.*
 
 @Serializable
@@ -176,18 +177,29 @@ data class Report(
 @Serializable
 data class ReportDAO(
     val id: String? = null,
-    val lat: Double,
-    val lng: Double,
-    val issueTypeId: Int,
-    val severityId: Int,
-    val statusId: Int,
-    val zipCode: String,
+    val coordinate: Coordinate? = null,
+    val lat: Double = 0.0,
+    val lng: Double = 0.0,
+    val address: String = "",
+    val title: String = "",
+    val description: String = "",
+    val issueTypeId: Int = 1,
+    val severityId: Int = 1,
+    val statusId: Int = 1,
+    val matterToSolveId: Int = 1,
+    val reportedAt: JsonElement? = null,
+    val cellIndex: String = "",
+    val createdAt: JsonElement? = null,
+    val updatedAt: JsonElement? = null,
+    val zipCode: String = "",
     val groupingId: String? = null,
     val reportedBy: String? = null,
-    val suggestedTitle: String,
-    val suggestedDescription: String,
-    val attachments: List<String> = emptyList(),
-    val cityId: String,
+    val olc: String? = null,
+    val suggestedTitle: String = "",
+    val suggestedDescription: String = "",
+    val reportState: String? = null,
+    val attachments: List<JsonElement> = emptyList(),
+    val cityId: String? = null,
     val reportContainer: String? = null,
     val shareUrl: String? = null,
     val observations: String? = null

@@ -13,5 +13,6 @@ data class FriendlyCityDistribution(
     val coordinates: Coordinate,
     val isCapitalCity: Int? = null,
     val isDepartmentalCapital: Int? = null,
-    val groupingId: String? = null
+    val groupingId: String? = null,
+    val groupingName: String? = null
 )
