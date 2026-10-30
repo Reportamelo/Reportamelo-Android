@@ -8,9 +8,9 @@ import androidx.room.Index
 @Entity(
     tableName = "cities",
     indices = [
-        Index(value = ["geoCode"]),
-        Index(value = ["zipCode"]),
-        Index(value = ["groupingNameCode"])
+        Index(value = ["geoCode"], name = "idx_cities_geoCode"),
+        Index(value = ["zipCode"], name = "idx_cities_zipCode"),
+        Index(value = ["groupingNameCode"], name = "idx_cities_groupingNameCode")
     ]
 )
 data class DistrictEntity(
@@ -31,12 +31,13 @@ data class DistrictEntity(
     val secondLevel: String?,
     val stateNameSortKey: String?,
     val thirdLevel: String?,
-    val geoCode: String?
+    val geoCode: String?,
+    val cantons: String? = null
 )
 
 @Entity(
     tableName = "cantons",
-    indices = [Index(value = ["cityId"])],
+    indices = [Index(value = ["cityId"], name = "idx_cantons_cityId")],
     foreignKeys = [
         ForeignKey(
             entity = DistrictEntity::class,
