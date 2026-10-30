@@ -1,0 +1,239 @@
+[
+        {
+            "cityId": "e6111ea7-9066-4aea-9157-09672dbe2c4e",
+            "countryCode": "SV",
+            "ZipCode": "1401",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Cuscatlán",
+            "thirdLevel": "Cojutepeque",
+            "groupingId": "4388e6be-28d8-4f24-9b6b-801b96a92823",
+            "groupingName": "Municipio de Cuscatlán Sur",
+            "legalGroupName": "Distrito de Cojutepeque",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.72141,
+                "lng": -88.9351533
+            }
+        },
+        {
+            "cityId": "326c015a-db2d-4169-a215-3d641edc6f21",
+            "countryCode": "SV",
+            "ZipCode": "1701",
+            "firstLevel": "El Salvador",
+            "secondLevel": "San Vicente",
+            "thirdLevel": "San Vicente",
+            "groupingId": "f8832a76-90f3-4e4b-97e3-0d335606d132",
+            "groupingName": "Municipio de San Vicente Sur",
+            "legalGroupName": "Distrito de San Vicente",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.6418712,
+                "lng": -88.7850941
+            }
+        },
+        {
+            "cityId": "9ee0cd53-b6f5-47a3-9523-492a8e1fd4b0",
+            "countryCode": "SV",
+            "ZipCode": "1601",
+            "firstLevel": "El Salvador",
+            "secondLevel": "La Paz",
+            "thirdLevel": "Zacatecoluca",
+            "groupingId": "41071478-f9b1-4775-be7f-8566a7b73812",
+            "groupingName": "Municipio de La Paz Este",
+            "legalGroupName": "Distrito de Zacatecoluca",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.5084266,
+                "lng": -88.8700186
+            }
+        },
+        {
+            "cityId": "21a91eeb-88f2-4632-beac-9fa9b7650e84",
+            "countryCode": "SV",
+            "ZipCode": "1201",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Cabañas",
+            "thirdLevel": "Sensuntepeque",
+            "groupingId": "f8832a76-90f3-4e4b-97e3-0d335606d132",
+            "groupingName": "Municipio de Cabañas Este",
+            "legalGroupName": "Distrito de Sensuntepeque",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.8757106,
+                "lng": -88.6280371
+            }
+        },
+        {
+            "cityId": "ffb7496e-2199-4f4a-a57f-ed552e6a9a84",
+            "countryCode": "SV",
+            "ZipCode": "3101",
+            "firstLevel": "El Salvador",
+            "secondLevel": "La Unión",
+            "thirdLevel": "La Unión",
+            "groupingId": "77b218a1-8d26-4076-a006-2581079d2b27",
+            "groupingName": "Municipio de La Unión Sur",
+            "legalGroupName": "Distrito de La Unión",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.3377523,
+                "lng": -87.8423486
+            }
+        },
+        {
+            "cityId": "2ba13ffb-8729-4d26-8444-2592a4957e76",
+            "countryCode": "SV",
+            "ZipCode": "2301",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Sonsonate",
+            "thirdLevel": "Sonsonate",
+            "groupingId": "b8e217a4-0495-4672-881c-0b73646da429",
+            "groupingName": "Municipio de Sonsonate Centro",
+            "legalGroupName": "Distrito de Sonsonate",
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.71889,
+                "lng": -89.72417
+            }
+        },
+        {
+            "cityId": "70bf3726-921b-4e20-b9d0-3d53b4b86de9",
+            "countryCode": "SV",
+            "ZipCode": "3201",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Morazán",
+            "thirdLevel": "San Francisco Gotera",
+            "groupingId": "03a62883-9b16-4318-971c-3c8c6f443b7f",
+            "groupingName": "Municipio de Morazán Sur",
+            "legalGroupName": "Distrito de San Francisco Gotera",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.6953076,
+                "lng": -88.1085518
+            }
+        },
+        {
+            "cityId": "a67b90f9-1d76-4835-a994-03cd04f1d619",
+            "countryCode": "SV",
+            "ZipCode": "1101",
+            "firstLevel": "El Salvador",
+            "secondLevel": "San Salvador",
+            "thirdLevel": "San Salvador",
+            "groupingId": "c3d25687-f823-41e9-913a-6944e8c18712",
+            "groupingName": "Municipio de San Salvador Centro",
+            "legalGroupName": "Distrito de San Salvador",
+            "isCapitalCity": 1,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.6979857,
+                "lng": -89.1918083
+            }
+        },
+        {
+            "cityId": "5a51f401-4406-4d9b-a2ef-31129be21048",
+            "countryCode": "SV",
+            "ZipCode": "3401",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Usulután",
+            "thirdLevel": "Usulután",
+            "groupingId": "6f82729a-5264-4630-9774-6330072b270a",
+            "groupingName": "Municipio de Usulután Este",
+            "legalGroupName": "Distrito de Usulután",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.3444216,
+                "lng": -88.4396629
+            }
+        },
+        {
+            "cityId": "c3d75972-262a-4839-9208-5746307a520e",
+            "countryCode": "SV",
+            "ZipCode": "3301",
+            "firstLevel": "El Salvador",
+            "secondLevel": "San Miguel",
+            "thirdLevel": "San Miguel",
+            "groupingId": "f242557a-0d85-45d6-b489-08a65c490a61",
+            "groupingName": "Municipio de San Miguel Centro",
+            "legalGroupName": "Distrito de San Miguel",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.4817044,
+                "lng": -88.1762026
+            }
+        },
+        {
+            "cityId": "6b2a1033-31d9-4e9c-899c-bb17e87f39c6",
+            "countryCode": "SV",
+            "ZipCode": "1301",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Chalatenango",
+            "thirdLevel": "Chalatenango",
+            "groupingId": "99488a0b-f350-4228-b016-568853b01a14",
+            "groupingName": "Municipio de Chalatenango Sur",
+            "legalGroupName": "Distrito de Chalatenango",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 14.0413449,
+                "lng": -88.9409603
+            }
+        },
+        {
+            "cityId": "2b1908d4-5aba-4ac8-a390-577f84adbc9b",
+            "countryCode": "SV",
+            "ZipCode": "2101",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Ahuachapán",
+            "thirdLevel": "Ahuachapán",
+            "groupingId": "7e9d63fe-29c8-48d2-b9a7-534faeff3e5b",
+            "groupingName": "Municipio de Ahuachapán Centro",
+            "legalGroupName": "Distrito de Ahuachapán",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.9195669,
+                "lng": -89.8485353
+            }
+        },
+        {
+            "cityId": "d25de983-c87c-4bf0-bb7f-9203c3755985",
+            "countryCode": "SV",
+            "ZipCode": "1501",
+            "firstLevel": "El Salvador",
+            "secondLevel": "La Libertad",
+            "thirdLevel": "Santa Tecla",
+            "groupingId": "cc46f556-91e8-466f-998b-7033783db9f9",
+            "groupingName": "Municipio de La Libertad Sur",
+            "legalGroupName": "Distrito de Santa Tecla",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.6753907,
+                "lng": -89.2916309
+            }
+        },
+        {
+            "cityId": "8f04ddbb-24a6-421c-9e9d-dd9b6913fda0",
+            "countryCode": "SV",
+            "ZipCode": "2201",
+            "firstLevel": "El Salvador",
+            "secondLevel": "Santa Ana",
+            "thirdLevel": "Santa Ana",
+            "groupingId": "36f9036c-2f95-460d-953b-e01614761cc2",
+            "groupingName": "Municipio de Santa Ana Centro",
+            "legalGroupName": "Distrito de Santa Ana",
+            "isCapitalCity": 0,
+            "isDepartmentalCapital": 1,
+            "coordinates": {
+                "lat": 13.9947872,
+                "lng": -89.5571909
+            }
+        }
+    ]
