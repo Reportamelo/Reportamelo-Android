@@ -101,19 +101,29 @@ object ReportRepository {
     }
 
     suspend fun create(
-        report: Report, 
-        shareIndexHash: String? = null, 
-        reportContainer: String? = null, 
-        groupingNameCode: String? = null, 
+        report: Report,
+        countryCode: String? = "SV",
+        cityId: String? = null,
+        shareIndexHash: String? = null,
+        reportContainer: String? = null,
+        groupingNameCode: String? = null,
         groupingId: String? = null
     ): String {
         return try {
-            val h = mutableMapOf("CountryCode" to "SV")
-            shareIndexHash?.let { h["ShareIndexHash"] = it }
-            reportContainer?.let { h["ReportContainer"] = it }
-            groupingNameCode?.let { h["GroupingNameCode"] = it }
-            groupingId?.let { h["GroupingCode"] = it }
-            
+            val resolvedCountryCode = countryCode?.takeIf { it.isNotEmpty() } ?: "SV"
+            val resolvedCityId = cityId?.takeIf { it.isNotEmpty() } ?: report.cityId
+            val h = mutableMapOf(
+                Apis.CLIENT_TYPE_HEADER to Apis.CLIENT_TYPE_ANDROID,
+                "CountryCode" to resolvedCountryCode
+            )
+            if (resolvedCityId.isNotEmpty()) {
+                h["CityId"] = resolvedCityId
+            }
+            shareIndexHash?.takeIf { it.isNotEmpty() }?.let { h["ShareIndexHash"] = it }
+            reportContainer?.takeIf { it.isNotEmpty() }?.let { h["ReportContainer"] = it }
+            groupingNameCode?.takeIf { it.isNotEmpty() }?.let { h["GroupingNameCode"] = it }
+            groupingId?.takeIf { it.isNotEmpty() }?.let { h["GroupingCode"] = it }
+
             val response = reportsService.createReport(report, h)
 
             if (response.code == "REPORT_CREATED") {
@@ -124,9 +134,11 @@ object ReportRepository {
         } catch (e: ServiceError.NetworkError) {
             throw CommonIntercommunicationErrors.NetworkError(e.message ?: "")
         } catch (e: ServiceError.BadRequest) {
-            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code ?: "")
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
         } catch (e: ServiceError.ServerError) {
             throw CommonIntercommunicationErrors.ServerError(e.code)
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.message ?: "")
         }
@@ -136,10 +148,6 @@ object ReportRepository {
         return try {
             val id = report.id ?: throw CommonIntercommunicationErrors.GenericError("No report id")
 
-            // In Android, report status might be in statusId
-            // assuming reportState iOS equivalent was ReportState, here we can use statusId
-            // Assuming 3 is "IN_PROGRESS" or something, but we don't have ReportState enum anymore directly mapped. Let's just bypass
-            // if (report?.reportState == ReportState.MODIFYING) {
             val response = reportsService.updateReport(id, report, headers)
 
             if (response.code == "REPORT_UPDATED") {
@@ -147,6 +155,14 @@ object ReportRepository {
             } else {
                 throw CommonIntercommunicationErrors.GenericError("Error updating report")
             }
+        } catch (e: ServiceError.NetworkError) {
+            throw CommonIntercommunicationErrors.NetworkError(e.message ?: "")
+        } catch (e: ServiceError.BadRequest) {
+            throw CommonIntercommunicationErrors.InvalidPetition(e.response.code)
+        } catch (e: ServiceError.ServerError) {
+            throw CommonIntercommunicationErrors.ServerError(e.code)
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.message ?: "")
         }

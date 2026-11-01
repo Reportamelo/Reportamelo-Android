@@ -2,6 +2,8 @@ package app.reportamelo.repository
 
 import app.reportamelo.models.*
 import app.reportamelo.commons.*
+import app.reportamelo.locator.data.DistrictEntity
+import app.reportamelo.locator.database.LocatorLocalDataSource
 import app.reportamelo.network.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -67,11 +69,91 @@ object CitiesRepository {
         }
     }
 
+    fun filterLocal(
+        countryCode: String = CountryCode.SV.name,
+        departmentalCapital: Boolean? = null,
+        stateName: String? = null,
+        cityName: String? = null,
+        groupingName: String? = null,
+        limit: Int = 30
+    ): FriendlyCities {
+        val districts: List<DistrictEntity> = when {
+            departmentalCapital == true -> {
+                LocatorLocalDataSource.findDepartmentalCapitals(countryCode = countryCode)
+            }
+            !groupingName.isNullOrEmpty() -> {
+                LocatorLocalDataSource.findDistrictsByGroupingName(
+                    groupingName = groupingName,
+                    countryCode = countryCode,
+                    limit = limit
+                )
+            }
+            !cityName.isNullOrEmpty() -> {
+                LocatorLocalDataSource.findDistrictsByThirdLevel(
+                    thirdLevel = cityName,
+                    countryCode = countryCode,
+                    limit = limit
+                )
+            }
+            !stateName.isNullOrEmpty() -> {
+                LocatorLocalDataSource.findDistrictsByState(
+                    stateName = stateName,
+                    countryCode = countryCode,
+                    limit = limit
+                )
+            }
+            else -> {
+                LocatorLocalDataSource.findDistrictsByThirdLevel(
+                    thirdLevel = "",
+                    countryCode = countryCode,
+                    limit = limit
+                )
+            }
+        }
+
+        val documents = districts.map { it.toFriendlyCityDistribution() }
+        return FriendlyCities(
+            documents = documents,
+            total = documents.size,
+            page = 1,
+            documentsPerPage = limit,
+            totalPages = 1,
+            hasNext = false,
+            hasPrev = false
+        )
+    }
+
     suspend fun filter(q: PaginatedRequestQueryParams): FriendlyCities {
+        val localResult = filterLocal(
+            countryCode = q.countryCode ?: CountryCode.SV.name,
+            departmentalCapital = q.departmentalCapital,
+            stateName = q.stateName,
+            cityName = q.cityName,
+            groupingName = q.groupingName
+        )
+        if (!localResult.documents.isNullOrEmpty()) {
+            return localResult
+        }
         return try {
             service.filter(q)
-        } catch (e: Exception) {
-            throw CommonIntercommunicationErrors.GenericError(e.message ?: "")
+        } catch (_: Exception) {
+            localResult
         }
     }
+}
+
+fun DistrictEntity.toFriendlyCityDistribution(): FriendlyCityDistribution {
+    return FriendlyCityDistribution(
+        cityId = cityId,
+        firstLevel = firstLevel ?: "",
+        secondLevel = secondLevel ?: "",
+        thirdLevel = thirdLevel ?: "",
+        ZipCode = zipCode,
+        legalGroupName = legalGroupName ?: "",
+        coordinates = Coordinate(lat = lat, lng = lng),
+        isCapitalCity = if (isCapitalCity) 1 else 0,
+        isDepartmentalCapital = if (isDepartmentalCapital) 1 else 0,
+        groupingId = groupingId,
+        groupingName = groupingName
+    )
 }

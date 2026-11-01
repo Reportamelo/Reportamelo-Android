@@ -43,7 +43,7 @@ sealed class ReportError : Exception() {
     object NoCityIdentifier : ReportError()
 }
 
-class UserRepository() {
+open class UserRepository() {
 
     companion object {
         val shared = UserRepository()
@@ -133,12 +133,30 @@ class UserRepository() {
         }
     }
 
+    fun getGoogleAvatar(): String {
+        return app.reportamelo.commons.AppPreferences.getString("google_avatar_url") ?: ""
+    }
+
+    fun setGoogleAvatar(url: String) {
+        app.reportamelo.commons.AppPreferences.setString("google_avatar_url", url)
+    }
+
     fun getProfilePicture(): String {
-        return app.reportamelo.commons.AppPreferences.getString("avatar_url") ?: ""
+        val raw = getGoogleAvatar().ifEmpty {
+            app.reportamelo.commons.AppPreferences.getString("avatar_url") ?: ""
+        }
+        if (raw.isEmpty()) return ""
+        return if (raw.startsWith("http")) {
+            raw
+        } else {
+            "${Apis.baseURL}/${raw.trimStart('/')}"
+        }
     }
 
     fun getProfilePictureURL(): Uri? {
-        return getAvatar()
+        val resolvedUrl = getProfilePicture()
+        if (resolvedUrl.isEmpty()) return null
+        return runCatching { Uri.parse(resolvedUrl) }.getOrNull()
     }
 
     fun getNames(): String {
@@ -163,11 +181,30 @@ class UserRepository() {
 
     fun setAvatar(url: String) {
         app.reportamelo.commons.AppPreferences.setString("avatar_url", url)
+        if (url.isNotEmpty() && getGoogleAvatar().isEmpty()) {
+            setGoogleAvatar(url)
+        }
     }
 
-    fun getPublicInformation(authMethod: AuthMethod): UserProfile? {
+    open fun getPublicInformation(authMethod: AuthMethod): UserProfile? {
         if (authMethod == AuthMethod.GOOGLE) {
-            return null
+            val storedNames = app.reportamelo.commons.AppPreferences.getString("names").orEmpty()
+            val keychainName = LegacyKeychain.getToken(KeychainToken.NAME).orEmpty()
+            val name = storedNames.ifEmpty { keychainName }
+            val email = LegacyKeychain.getToken(KeychainToken.EMAIL).orEmpty()
+            val avatar = getProfilePicture()
+            val profileId = LegacyKeychain.getToken(KeychainToken.PROFILE_ID).orEmpty()
+
+            if (name.isEmpty() && email.isEmpty() && avatar.isEmpty()) {
+                return null
+            }
+
+            return UserProfile(
+                username = name,
+                avatar = avatar.ifEmpty { null },
+                email = email.ifEmpty { null },
+                profileId = profileId
+            )
         }
 
         if (authMethod == AuthMethod.APPLE) {
@@ -193,7 +230,7 @@ class UserRepository() {
         } else {
             "${Apis.baseURL}/${urlStr.trimStart('/')}"
         }
-        return Uri.parse(resolvedUrl)
+        return runCatching { Uri.parse(resolvedUrl) }.getOrNull()
     }
 
     suspend fun changeAvatar(image: Bitmap, from: AvatarCreatedFrom): String {
@@ -212,11 +249,13 @@ class UserRepository() {
         }
     }
 
-    suspend fun change(userName: String, completion: (Result<String>) -> Unit) {
+    open suspend fun change(userName: String, completion: (Result<String>) -> Unit) {
         try {
             val result = service.change(userName, headers)
-            if (result.code.toString() == "USER_NAME_UPDATED") {
-                completion(Result.success(result.message))
+            when (result.code.toString()) {
+                "USER_NAME_UPDATED" -> completion(Result.success(result.message))
+                "UPDATE_NAME_ERROR" -> completion(Result.failure(UserError.ServerError(result.message)))
+                else -> completion(Result.failure(UserError.UnknownError(result.message)))
             }
         } catch (genericResponse: ServiceError.BadRequest) {
             when (genericResponse.response.code) {
@@ -228,11 +267,14 @@ class UserRepository() {
         }
     }
 
-    suspend fun checkAvailability(userName: String, completion: (Result<String>) -> Unit) {
+    open suspend fun checkAvailability(userName: String, completion: (Result<String>) -> Unit) {
         try {
             val result = service.checkAvailability(userName, headers)
-            if (result.code.toString() == "USER_NAME_AVAILABLE") {
-                completion(Result.success(result.message))
+            when (result.code.toString()) {
+                "USER_NAME_AVAILABLE" -> completion(Result.success(result.message))
+                "USER_NAME_TAKEN" -> completion(Result.failure(UserError.Taken))
+                "USER_NAME_INVALID" -> completion(Result.failure(UserError.InvalidUserName))
+                else -> completion(Result.failure(UserError.UnknownError(result.message)))
             }
         } catch (genericResponse: ServiceError.BadRequest) {
             when (genericResponse.response.code) {
@@ -248,11 +290,13 @@ class UserRepository() {
     suspend fun modify(notifications: Notifications): Result<String> {
         try {
             val result = service.modify(notifications, headers)
-            if (result.code.toString() == "NOTIFICATIONS_UPDATED") {
-                return Result.success(result.message)
+            if (result.code == "NOTIFICATIONS_UPDATED" || result.id == "NOTIFICATIONS_UPDATED") {
+                return Result.success(result.message.ifEmpty { result.code })
             } else {
-                throw CommonIntercommunicationErrors.GenericError(result.message)
+                throw CommonIntercommunicationErrors.GenericError(result.message.ifEmpty { result.code })
             }
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
         } catch (e: ServiceError.ServerError) {
             throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
@@ -265,11 +309,13 @@ class UserRepository() {
     suspend fun completeLandingPage(): SuccessfulResult {
         try {
             val result = service.completeLandingPage()
-            if (result.code.toString() == "LANDING_COMPLETED_UPDATED") {
+            if (result.code == "LANDING_COMPLETED_UPDATED" || result.id == "LANDING_COMPLETED_UPDATED") {
                 return SuccessfulResult.DONE
             } else {
-                throw CommonIntercommunicationErrors.GenericError(result.message)
+                throw CommonIntercommunicationErrors.GenericError(result.message.ifEmpty { result.code })
             }
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
         } catch (e: ServiceError.ServerError) {
             throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
         } catch (e: ServiceError.NetworkError) {
@@ -281,19 +327,32 @@ class UserRepository() {
 
     suspend fun sendDevice(token: String): SuccessfulResult {
         try {
-            val deviceId = AppPreferences.appContext?.let { DeviceService(it).getDeviceId() } ?: ""
+            val deviceId = AppPreferences.appContext?.let {
+                runCatching { DeviceService(it).getDeviceId() }.getOrNull()
+            } ?: ""
+            val resolvedToken = token.takeIf {
+                it.isNotBlank() &&
+                    !it.contains("completion:state", ignoreCase = true) &&
+                    !it.contains("session:state", ignoreCase = true)
+            } ?: deviceId
             val deviceToken = DeviceTokenRequest(
-                deviceToken = token,
+                deviceToken = resolvedToken,
                 deviceId = deviceId,
                 platform = DeviceType.ANDROID
             )
 
             val result = service.send(deviceToken, headers)
-            if (result.code.toString() == "DEVICE_TOKEN_UPDATED") {
+            if (result.code == "DEVICE_TOKEN_UPDATED" || result.id == "DEVICE_TOKEN_UPDATED") {
                 return SuccessfulResult.DONE
             } else {
-                throw CommonIntercommunicationErrors.GenericError(result.code)
+                throw CommonIntercommunicationErrors.GenericError(result.message.ifEmpty { result.code })
             }
+        } catch (e: CommonIntercommunicationErrors) {
+            throw e
+        } catch (e: ServiceError.ServerError) {
+            throw CommonIntercommunicationErrors.ServerError(e.message ?: "Server Error")
+        } catch (e: ServiceError.NetworkError) {
+            throw CommonIntercommunicationErrors.NetworkError(e.message ?: "Network error")
         } catch (e: Exception) {
             throw CommonIntercommunicationErrors.GenericError(e.localizedMessage ?: "Unknown error")
         }
@@ -301,9 +360,7 @@ class UserRepository() {
 
     fun userHasCompletedLandingPage(): Boolean {
         val landingToken = LegacyKeychain.getToken(KeychainToken.LANDING_PAGE_COMPLETE) ?: ""
-        val deviceToken = LegacyKeychain.getToken(KeychainToken.DEVICE_ID) ?: ""
-        return landingToken.contains("completion:state:successfully") ||
-            deviceToken.contains("completion:state:successfully")
+        return landingToken.contains("completion:state:successfully")
     }
 
     fun getAuthMethod(): AuthMethod? {

@@ -7,7 +7,12 @@ import app.reportamelo.network.MapExplorerService
 
 object MapExplorerRepository {
 
-    private val service = MapExplorerService(ServiceClient(Apis.apiV1))
+    var service: MapExplorerService = MapExplorerService(
+        ServiceClient(
+            baseURL = Apis.apiV1,
+            decoderType = DecoderType.MESSAGE_PACK
+        )
+    )
 
     suspend fun reportsByLocation(lat: Double, lng: Double, radius: Int, severityId: Int?, issueTypeId: Int?, cityId: String): List<MapExplorerReport> {
         return try {

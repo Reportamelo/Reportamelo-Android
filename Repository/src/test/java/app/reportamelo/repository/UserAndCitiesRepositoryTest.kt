@@ -78,6 +78,32 @@ class UserAndCitiesRepositoryTest {
     }
 
     @Test
+    fun `CitiesRepository filterLocal searches all 262 SV districts by thirdLevel groupingName and stateName`() {
+        val byCity = CitiesRepository.filterLocal(
+            countryCode = CountryCode.SV.name,
+            cityName = "cusca"
+        ).documents.orEmpty()
+        assertEquals(
+            listOf("Antiguo Cuscatlán", "Cuscatancingo", "Nuevo Cuscatlán"),
+            byCity.map { it.thirdLevel }
+        )
+        assertFalse(byCity.any { it.thirdLevel == "Cojutepeque" })
+
+        val byGrouping = CitiesRepository.filterLocal(
+            countryCode = CountryCode.SV.name,
+            groupingName = "Municipio de Cuscatlan"
+        ).documents.orEmpty()
+        assertEquals(16, byGrouping.size)
+        assertTrue(byGrouping.any { it.thirdLevel == "Cojutepeque" })
+
+        val byState = CitiesRepository.filterLocal(
+            countryCode = CountryCode.SV.name,
+            stateName = "Cuscatlan"
+        ).documents.orEmpty()
+        assertEquals(16, byState.size)
+    }
+
+    @Test
     fun `UserRepository session and guest state syncs across KeychainService and AppPreferences`() {
         val repo = UserRepository()
         assertFalse(repo.isSessionValid())
@@ -244,5 +270,117 @@ class UserAndCitiesRepositoryTest {
         } finally {
             CommentsRepository.service = originalService
         }
+    }
+
+    @Test
+    fun `UserRepository checkAvailability and change map backend codes and BadRequest errors`() = runBlocking {
+        val repo = UserRepository()
+        val checkedNames = mutableListOf<String>()
+        var changedName: String? = null
+
+        repo.service = object : app.reportamelo.network.services.UserService() {
+            override suspend fun checkAvailability(
+                userName: String,
+                headers: Map<String, String>
+            ): GenericResponse {
+                checkedNames.add(userName)
+                return when (userName) {
+                    "tests.reportamelo" -> GenericResponse(
+                        code = "USER_NAME_AVAILABLE",
+                        message = "Available"
+                    )
+                    "taken.user" -> throw app.reportamelo.network.ServiceError.BadRequest(
+                        GenericResponse(code = "USER_NAME_TAKEN", message = "User name is taken")
+                    )
+                    else -> throw app.reportamelo.network.ServiceError.BadRequest(
+                        GenericResponse(code = "USER_NAME_INVALID", message = "User name is invalid")
+                    )
+                }
+            }
+
+            override suspend fun change(
+                userName: String,
+                headers: Map<String, String>
+            ): GenericResponse {
+                changedName = userName
+                return if (userName == "tests.reportamelo") {
+                    GenericResponse(code = "USER_NAME_UPDATED", message = "Updated")
+                } else {
+                    throw app.reportamelo.network.ServiceError.BadRequest(
+                        GenericResponse(code = "UPDATE_NAME_ERROR", message = "Could not update username")
+                    )
+                }
+            }
+        }
+
+        var availableResult: Result<String>? = null
+        repo.checkAvailability("tests.reportamelo") { availableResult = it }
+        assertTrue(availableResult?.isSuccess == true)
+
+        var takenResult: Result<String>? = null
+        repo.checkAvailability("taken.user") { takenResult = it }
+        assertTrue(takenResult?.exceptionOrNull() is UserError.Taken)
+
+        var invalidResult: Result<String>? = null
+        repo.checkAvailability("bad") { invalidResult = it }
+        assertTrue(invalidResult?.exceptionOrNull() is UserError.InvalidUserName)
+
+        assertEquals(listOf("tests.reportamelo", "taken.user", "bad"), checkedNames)
+
+        var changeSuccess: Result<String>? = null
+        repo.change("tests.reportamelo") { changeSuccess = it }
+        assertTrue(changeSuccess?.isSuccess == true)
+        assertEquals("tests.reportamelo", changedName)
+
+        var changeError: Result<String>? = null
+        repo.change("fail.user") { changeError = it }
+        assertTrue(changeError?.exceptionOrNull() is UserError.ServerError)
+    }
+
+    @Test
+    fun `UserRepository getPublicInformation for Google returns saved user profile and preserves googleAvatar`() {
+        val repo = UserRepository()
+        assertNull(repo.getPublicInformation(app.reportamelo.commons.AuthMethod.GOOGLE))
+
+        repo.setNames("tests.reportamelo")
+        LegacyKeychain.setToken(KeychainToken.EMAIL, "tests.reportamelo@gmail.com")
+        repo.setGoogleAvatar("https://lh3.googleusercontent.com/a/default-user")
+        repo.setAvatar("avatars/custom-monogram.jpg")
+
+        val googleProfile = repo.getPublicInformation(app.reportamelo.commons.AuthMethod.GOOGLE)
+        assertNotNull(googleProfile)
+        assertEquals("tests.reportamelo", googleProfile?.username)
+        assertEquals("tests.reportamelo@gmail.com", googleProfile?.email)
+        assertEquals("https://lh3.googleusercontent.com/a/default-user", googleProfile?.avatar)
+        assertEquals("https://lh3.googleusercontent.com/a/default-user", repo.getProfilePicture())
+    }
+
+    @Test
+    fun `UserRepository sendDevice accepts DEVICE_TOKEN_UPDATED in id or code and sanitizes invalid state strings`() = runBlocking {
+        val repo = UserRepository()
+        var capturedPayload: app.reportamelo.models.DeviceTokenRequest? = null
+
+        repo.service = object : app.reportamelo.network.services.UserService() {
+            override suspend fun send(
+                deviceToken: app.reportamelo.models.DeviceTokenRequest,
+                headers: Map<String, String>
+            ): GenericResponse {
+                capturedPayload = deviceToken
+                return GenericResponse(
+                    id = "DEVICE_TOKEN_UPDATED",
+                    message = "",
+                    code = "Device token updated successfully."
+                )
+            }
+        }
+
+        val result = repo.sendDevice("0fff3cfb8d4ad5f8")
+        assertEquals(SuccessfulResult.DONE, result)
+        assertEquals("0fff3cfb8d4ad5f8", capturedPayload?.deviceToken)
+        assertEquals(app.reportamelo.commons.DeviceType.ANDROID, capturedPayload?.platform)
+
+        // If an invalid state string is passed, it is sanitized and never sent as "completion:state:successfully"
+        repo.sendDevice("completion:state:successfully")
+        assertFalse(capturedPayload?.deviceToken?.contains("completion:state") == true)
     }
 }
