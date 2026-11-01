@@ -160,3 +160,17 @@ enum class ReportViolationStatus(val description: String) {
     @SerialName("sentToModeration") SENT_TO_MODERATION("Sent to Moderation"),
     @SerialName("removed") REMOVED("Removed")
 }
+
+enum class BlockReasons(val id: String, val defaultDescription: String) {
+    WRONG_INFORMATION("wrong_information", "Wrong information"),
+    HARASSMENT("harassment", "Harassment or bullying"),
+    SELF_PROMOTION("self_promotion", "Unwanted self-promotion"),
+    HATE_SPEECH("hate_speech", "Hate speech or discrimination"),
+    VIOLENCE("violence", "Threats or violence"),
+    INAPPROPRIATE_CONTENT("inappropriate_content", "Inappropriate or explicit content"),
+    PRIVACY_VIOLATION("privacy_violation", "Privacy violation or personal data"),
+    IMPERSONATION("impersonation", "Impersonation or fake account"),
+    SPAM_SCAM("spam_scam", "Spam or scam"),
+    DUPLICATE_REPORT("duplicate_report", "Duplicate report"),
+    OTHER("other", "Other issue")
+}

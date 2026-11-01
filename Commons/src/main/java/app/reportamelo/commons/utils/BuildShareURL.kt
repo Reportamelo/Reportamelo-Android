@@ -2,6 +2,7 @@ package app.reportamelo.commons.utils
 
 import android.net.Uri
 import app.reportamelo.commons.Apis
+import app.reportamelo.commons.ReportAttachmentState
 
 enum class ShareType(val value: String) {
     REPORT("report"),
@@ -40,10 +41,6 @@ fun getURL(path: String): Uri? {
     return Uri.parse(EndpointsStub.baseURL).buildUpon()
         .appendPath(path)
         .build()
-}
-
-enum class ReportAttachmentState {
-    PENDING, CONFIRMED, INAPPROPRIATE, DELETED
 }
 
 fun buildPreviewAttachmentURL(reportContainer: String, fileName: String, state: ReportAttachmentState, updatedAtRaw: Long? = null): Uri? {

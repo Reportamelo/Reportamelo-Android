@@ -82,11 +82,21 @@ enum class KeychainToken {
     QUERY,
     USER_ID,
     PLAN_TYPE,
-    LANDING_PAGE_COMPLETE
+    LANDING_PAGE_COMPLETE,
+    BLOCKED_USERS
 }
 
 object LegacyKeychain {
     fun getToken(token: KeychainToken): String? = AppPreferences.getString(token.name)
     fun setToken(token: KeychainToken, value: String) = AppPreferences.setString(token.name, value)
     fun deleteToken(token: KeychainToken) = AppPreferences.remove(token.name)
+
+    fun loadBlockedUsers(): List<String> {
+        val raw = getToken(KeychainToken.BLOCKED_USERS) ?: return emptyList()
+        return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    fun saveBlockedUsers(users: List<String>) {
+        setToken(KeychainToken.BLOCKED_USERS, users.distinct().joinToString(","))
+    }
 }
