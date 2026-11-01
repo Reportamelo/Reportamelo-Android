@@ -8,12 +8,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
+import app.reportamelo.commons.ADDRESS_REGEX
 import app.reportamelo.commons.addressValidator
 import app.reportamelo.commons.descriptionValidator
 import app.reportamelo.commons.titleValidator
 import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.ui.components.TextInput
 import kotlinx.coroutines.delay
+
+private const val DEFAULT_TEXT_INPUT_REGEX = "[a-zA-Z0-9,\\u00C0-\\u00FF ]"
 
 @Composable
 fun DetailsView(
@@ -44,6 +47,7 @@ fun DetailsView(
             label = "Title of the issue",
             placeholder = titlePlaceholder,
             validators = titleValidator,
+            regex = DEFAULT_TEXT_INPUT_REGEX,
             onValidChange = { model.setTitleValid(it) },
             singleLine = true,
             focusRequester = titleFocusRequester
@@ -55,6 +59,7 @@ fun DetailsView(
             label = "Please describe the issue",
             placeholder = descriptionPlaceholder,
             validators = descriptionValidator,
+            regex = DEFAULT_TEXT_INPUT_REGEX,
             onValidChange = { model.setDescriptionValid(it) },
             singleLine = false,
             minLines = 2,
@@ -64,9 +69,10 @@ fun DetailsView(
         TextInput(
             value = report.address,
             onValueChange = { model.updateAddress(it) },
-            label = "Please let us know where the issue is.",
+            label = "Please tell us where is the issue",
             placeholder = "Address",
             validators = addressValidator,
+            regex = ADDRESS_REGEX,
             onValidChange = { model.setAddressValid(it) },
             isDisabled = isLoadingAddress,
             singleLine = false,

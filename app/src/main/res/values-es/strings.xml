@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Reportamelo</string>
+    <string name="id_s">ID: %1$s</string>
+    <string name="waiting_for_initial_report">Esperando reporte inicial</string>
+    <string name="report_confirmed_by_s">Reporte confirmado por %1$s</string>
+    <string name="waiting_for_confirmation">Esperando confirmación</string>
+    <string name="no_updates_yet">Aún no hay actualizaciones</string>
+    <string name="pending_resolution">Pendiente de resolución</string>
+    <string name="view_evidence_d">Ver evidencia (%1$d)</string>
+    <string name="address_label">Dirección:</string>
+    <string name="uploaded_by">Subido por</string>
+    <string name="no_evidences_yet">Aún no hay evidencias</string>
+    <string name="guest_citizen">Ciudadano invitado</string>
+    <string name="reports_submitted">Reportes enviados</string>
+    <string name="petitions_published">Peticiones publicadas</string>
+    <string name="no_observations">Sin observaciones</string>
+    <string name="confirm_user_blocking">Confirmar bloqueo de usuario</string>
+    <string name="i_confirm_that_this_user_violates_our_community_guidelines">Confirmo que este usuario infringe nuestras normas comunitarias.</string>
+    <string name="comments_for_s">Comentarios para: %1$s</string>
+    <string name="please_tell_us_how_this_problem_affects_you">Cuéntanos cómo te afecta este problema…</string>
+</resources>

@@ -9,15 +9,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -41,26 +44,30 @@ import app.reportamelo.communityIssues.helpers.toHex
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 
-private val AvatarColorPalette = listOf(
-    Color.fromHex("ec9458"),
-    Color.fromHex("f2784b"),
-    Color.fromHex("eb9532"),
-    Color.fromHex("f4b350"),
-    Color.fromHex("6bb9f0"),
-    Color.fromHex("59abe3"),
-    Color.fromHex("4183d7"),
-    Color.fromHex("52b3d9"),
-    Color.fromHex("a2ded0"),
-    Color.fromHex("87d37c"),
-    Color.fromHex("90c695"),
-    Color.fromHex("68c3a3"),
-    Color.fromHex("aea8d3"),
-    Color.fromHex("be90d4"),
-    Color.fromHex("9b59b6"),
-    Color.fromHex("d2527f"),
-    Color.fromHex("f62459"),
-    Color.fromHex("e26a6a")
-)
+@Composable
+fun CustomBlurryOverlay(
+    modifier: Modifier = Modifier,
+    show: Boolean,
+    onDismiss: () -> Unit
+) {
+    if (show) {
+        val isDark = isSystemInDarkTheme()
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(
+                    if (isDark) Color.Black.copy(alpha = 0.2f)
+                    else Color.White.copy(alpha = 0.08f)
+                )
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    onDismiss()
+                }
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,22 +83,32 @@ fun ProfileImage(
     val showPicker by profile.showPicker.collectAsState()
     val isGuest by profile.isGuest.collectAsState()
     val avatarURL by profile.avatarURL.collectAsState()
+    val googleAvatarURL by profile.googleAvatarURL.collectAsState()
     val selectedOption by profile.selectedAvatarOptionView.collectAsState()
     val selectedColorHex by profile.selectedAvatarColor.collectAsState()
 
-    val avatarBgColor = remember(selectedColorHex) {
-        if (selectedColorHex == ProfileDataModel.DEFAULT_AVATAR_COLOR) {
-            Color(0xFFEC6B00)
-        } else {
-            Color.fromHex(selectedColorHex)
+    LaunchedEffect(Unit) {
+        profile.setDefaultAvatar()
+    }
+
+    val monogramColor = remember(selectedColorHex) {
+        Color.fromHex(selectedColorHex)
+    }
+
+    val googleFallbackColor = Color(0xFFEC6B00)
+
+    val mainAvatarBgColor = remember(selectedOption, monogramColor) {
+        when (selectedOption) {
+            AvatarCreatedFrom.MONOGRAM, AvatarCreatedFrom.INITIALS -> monogramColor
+            else -> googleFallbackColor
         }
     }
 
     val fallbackText = remember(userName, selectedOption) {
         when (selectedOption) {
-            AvatarCreatedFrom.INITIALS -> profile.getInitials()
-            AvatarCreatedFrom.MONOGRAM -> profile.getMonogram()
-            else -> userName.take(1).ifEmpty { "t" }
+            AvatarCreatedFrom.INITIALS -> profile.getInitials().ifEmpty { "TE" }
+            AvatarCreatedFrom.MONOGRAM -> profile.getMonogram().ifEmpty { "T" }
+            else -> userName.trim().take(1).lowercase().ifEmpty { "t" }
         }
     }
 
@@ -135,9 +152,10 @@ fun ProfileImage(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .shadow(elevation = 6.dp, shape = CircleShape)
+                .shadow(elevation = 8.dp, shape = CircleShape)
                 .clip(CircleShape)
-                .background(if (isGuest) Color(0xFFE5E5EA) else avatarBgColor),
+                .background(if (isGuest) Color(0xFFE5E5EA) else mainAvatarBgColor)
+                .border(width = 1.5.dp, color = Color.White.copy(alpha = 0.7f), shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -174,13 +192,13 @@ fun ProfileImage(
                         loading = {
                             AvatarMonogramCircle(
                                 text = fallbackText,
-                                backgroundColor = avatarBgColor
+                                backgroundColor = mainAvatarBgColor
                             )
                         },
                         error = {
                             AvatarMonogramCircle(
                                 text = fallbackText,
-                                backgroundColor = avatarBgColor
+                                backgroundColor = mainAvatarBgColor
                             )
                         }
                     )
@@ -188,7 +206,7 @@ fun ProfileImage(
                 else -> {
                     AvatarMonogramCircle(
                         text = fallbackText,
-                        backgroundColor = avatarBgColor
+                        backgroundColor = mainAvatarBgColor
                     )
                 }
             }
@@ -241,115 +259,384 @@ fun ProfileImage(
     }
 
     if (showPicker && !isGuest) {
-        var activeTab by remember {
-            mutableStateOf(
-                if (selectedOption == AvatarCreatedFrom.INITIALS) {
-                    AvatarCreatedFrom.INITIALS
-                } else {
-                    AvatarCreatedFrom.MONOGRAM
-                }
-            )
+        var currentView by remember {
+            mutableStateOf(AvatarCreatedFrom.OPTIONS_SELECTOR)
         }
-        var currentColor by remember {
+        var currentColor by remember(selectedColorHex) {
             mutableStateOf(Color.fromHex(selectedColorHex))
         }
+        val isDark = isSystemInDarkTheme()
 
         ModalBottomSheet(
-            onDismissRequest = { profile.setShowPicker(false) }
+            onDismissRequest = { profile.setShowPicker(false) },
+            scrimColor = Color.Transparent,
+            dragHandle = null,
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF9F9FB)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Customize Avatar",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                val previewText = if (activeTab == AvatarCreatedFrom.INITIALS) {
-                    profile.getInitials()
-                } else {
-                    profile.getMonogram()
-                }
-
-                MonogramView(
-                    text = previewText,
-                    backgroundColor = currentColor,
-                    mode = MonogramMode.PREVIEW
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    FilterChip(
-                        selected = activeTab == AvatarCreatedFrom.MONOGRAM,
-                        onClick = { activeTab = AvatarCreatedFrom.MONOGRAM },
-                        label = { Text("Monogram") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Title, contentDescription = null, modifier = Modifier.size(18.dp))
-                        }
-                    )
-                    FilterChip(
-                        selected = activeTab == AvatarCreatedFrom.INITIALS,
-                        onClick = { activeTab = AvatarCreatedFrom.INITIALS },
-                        label = { Text("Initials") },
-                        leadingIcon = {
-                            Icon(Icons.Default.TextFields, contentDescription = null, modifier = Modifier.size(18.dp))
-                        }
-                    )
-                    AssistChip(
-                        onClick = { galleryLauncher.launch("image/*") },
-                        label = { Text("Library") },
-                        leadingIcon = {
-                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
-                        }
-                    )
-                    AssistChip(
-                        onClick = { cameraLauncher.launch(null) },
-                        label = { Text("Camera") },
-                        leadingIcon = {
-                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
-                        }
-                    )
-                }
-
-                ColorGrid(
-                    selectedColor = currentColor,
-                    colors = AvatarColorPalette,
-                    onColorSelected = { color ->
-                        currentColor = color
-                        profile.setSelectedAvatarColor(color.toHex())
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(170.dp)
-                )
-
-                ThemedButton(
-                    message = "Save",
-                    type = ThemedButtonType.PRIMARY,
-                    style = ThemedButtonStyle.NORMAL,
-                    isLoading = isUploading,
-                    onClick = {
-                        profile.setSelectedAvatarOptionView(activeTab)
-                        profile.setSelectedAvatarColor(currentColor.toHex())
-                        val generatedBitmap = profile.createAvatarBitmap(
-                            text = previewText,
-                            backgroundColorInt = currentColor.toArgb()
+                when (currentView) {
+                    AvatarCreatedFrom.OPTIONS_SELECTOR -> {
+                        AvatarSheetHeaderView(
+                            title = "Create your Avatar from",
+                            onClose = { profile.setShowPicker(false) }
                         )
-                        profile.uploadProfilePicture(generatedBitmap, activeTab)
-                        profile.setShowPicker(false)
-                    }
-                )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
+
+                        val googleInitial = userName.trim().take(1).lowercase().ifEmpty { "t" }
+                        val monogramText = profile.getMonogram().ifEmpty { "T" }
+                        val initialsText = profile.getInitials().ifEmpty { "TE" }
+
+                        // Row 1: Google Auth, Monogram, Initials
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            AvatarOptionItem(
+                                label = "Google Auth",
+                                isSelected = selectedOption == AvatarCreatedFrom.GOOGLE_AUTH,
+                                onClick = {
+                                    profile.applyGoogleAvatar {
+                                        profile.setShowPicker(false)
+                                    }
+                                }
+                            ) {
+                                val targetUrl = googleAvatarURL ?: avatarURL
+                                if (targetUrl != null) {
+                                    SubcomposeAsyncImage(
+                                        model = targetUrl.toString(),
+                                        contentDescription = "Google Auth Avatar",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                        loading = {
+                                            AvatarPreviewCircle(
+                                                text = googleInitial,
+                                                backgroundColor = googleFallbackColor,
+                                                fontWeight = FontWeight.Normal
+                                            )
+                                        },
+                                        error = {
+                                            AvatarPreviewCircle(
+                                                text = googleInitial,
+                                                backgroundColor = googleFallbackColor,
+                                                fontWeight = FontWeight.Normal
+                                            )
+                                        }
+                                    )
+                                } else {
+                                    AvatarPreviewCircle(
+                                        text = googleInitial,
+                                        backgroundColor = googleFallbackColor,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                }
+                            }
+
+                            AvatarOptionItem(
+                                label = "Monogram",
+                                isSelected = selectedOption == AvatarCreatedFrom.MONOGRAM,
+                                onClick = {
+                                    currentView = AvatarCreatedFrom.MONOGRAM
+                                }
+                            ) {
+                                AvatarPreviewCircle(
+                                    text = monogramText,
+                                    backgroundColor = currentColor,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            AvatarOptionItem(
+                                label = "Initials",
+                                isSelected = selectedOption == AvatarCreatedFrom.INITIALS,
+                                onClick = {
+                                    currentView = AvatarCreatedFrom.INITIALS
+                                }
+                            ) {
+                                AvatarPreviewCircle(
+                                    text = initialsText,
+                                    backgroundColor = currentColor,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Row 2: Photo, Camera, empty slot (3-column alignment matching iOS LazyVGrid)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            AvatarOptionItem(
+                                label = "Photo",
+                                isSelected = selectedOption == AvatarCreatedFrom.PHOTO,
+                                onClick = {
+                                    galleryLauncher.launch("image/*")
+                                }
+                            ) {
+                                AvatarIconPreviewCircle(
+                                    icon = Icons.Outlined.PhotoLibrary,
+                                    contentDescription = "Photo",
+                                    backgroundColor = googleFallbackColor
+                                )
+                            }
+
+                            AvatarOptionItem(
+                                label = "Camera",
+                                isSelected = selectedOption == AvatarCreatedFrom.CAMERA,
+                                onClick = {
+                                    cameraLauncher.launch(null)
+                                }
+                            ) {
+                                AvatarIconPreviewCircle(
+                                    icon = Icons.Outlined.CameraAlt,
+                                    contentDescription = "Camera",
+                                    backgroundColor = googleFallbackColor
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(88.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    AvatarCreatedFrom.MONOGRAM, AvatarCreatedFrom.INITIALS -> {
+                        val activeOption = currentView
+                        val previewText = if (activeOption == AvatarCreatedFrom.INITIALS) {
+                            profile.getInitials().ifEmpty { "TE" }
+                        } else {
+                            profile.getMonogram().ifEmpty { "T" }
+                        }
+
+                        AvatarSheetHeaderView(
+                            title = "Edit your Monogram",
+                            onClose = {
+                                currentView = AvatarCreatedFrom.OPTIONS_SELECTOR
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        MonogramView(
+                            text = previewText,
+                            backgroundColor = currentColor,
+                            mode = MonogramMode.PREVIEW
+                        )
+
+                        Spacer(modifier = Modifier.height(28.dp))
+
+                        ColorGrid(
+                            selectedColor = currentColor,
+                            colors = profile.backgroundColors,
+                            onColorSelected = { color ->
+                                currentColor = color
+                                profile.setSelectedAvatarColor(color.toHex())
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        ThemedButton(
+                            message = "Save",
+                            type = ThemedButtonType.OUTLINE,
+                            style = ThemedButtonStyle.NORMAL,
+                            isLoading = isUploading,
+                            onClick = {
+                                profile.setSelectedAvatarOptionView(activeOption)
+                                profile.setSelectedAvatarColor(currentColor.toHex())
+                                val generatedBitmap = profile.createAvatarBitmap(
+                                    text = previewText,
+                                    backgroundColorInt = currentColor.toArgb()
+                                )
+                                profile.uploadProfilePicture(generatedBitmap, activeOption)
+                                profile.setShowPicker(false)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    else -> Unit
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun AvatarSheetHeaderView(
+    modifier: Modifier = Modifier,
+    title: String,
+    onClose: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .size(40.dp)
+                .shadow(elevation = 2.dp, shape = CircleShape)
+                .clip(CircleShape)
+                .background(if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7))
+                .border(
+                    width = 1.dp,
+                    color = if (isDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.12f),
+                    shape = CircleShape
+                )
+                .clickable { onClose() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close",
+                tint = if (isDark) Color.White else Color.Black,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Text(
+            text = title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun AvatarOptionItem(
+    modifier: Modifier = Modifier,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .width(88.dp)
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(86.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Outer white ring with soft shadow (matching Screenshot 3)
+            Box(
+                modifier = Modifier
+                    .size(84.dp)
+                    .shadow(elevation = 4.dp, shape = CircleShape)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(
+                        width = 1.dp,
+                        color = Color.Black.copy(alpha = 0.08f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape),
+                    contentAlignment = Alignment.Center,
+                    content = content
+                )
+            }
+
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = (-4).dp, y = (-4).dp)
+                        .size(24.dp)
+                        .shadow(elevation = 2.dp, shape = CircleShape)
+                        .clip(CircleShape)
+                        .background(Color(0xFF0088FF))
+                        .border(width = 1.5.dp, color = Color.White, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Selected",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun AvatarPreviewCircle(
+    modifier: Modifier = Modifier,
+    text: String,
+    backgroundColor: Color,
+    fontWeight: FontWeight = FontWeight.Bold
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 32.sp,
+            fontWeight = fontWeight
+        )
+    }
+}
+
+@Composable
+private fun AvatarIconPreviewCircle(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    contentDescription: String,
+    backgroundColor: Color
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(34.dp)
+        )
     }
 }
 

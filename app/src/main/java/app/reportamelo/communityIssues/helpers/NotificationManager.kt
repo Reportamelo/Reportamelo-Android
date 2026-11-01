@@ -10,6 +10,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import app.reportamelo.commons.AppPreferences
+import app.reportamelo.commons.DeviceService
 import app.reportamelo.commons.KeychainToken
 import app.reportamelo.commons.LegacyKeychain
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,12 +21,29 @@ object AppNotificationManager {
     private const val TAG = "AppNotificationManager"
     private const val PREF_DEVICE_TOKEN = "push_device_token"
 
+    fun isValidDeviceToken(token: String?): Boolean {
+        if (token.isNullOrBlank()) return false
+        if (token.contains("completion:state", ignoreCase = true)) return false
+        if (token.contains("session:state", ignoreCase = true)) return false
+        return true
+    }
+
+    private fun readInitialDeviceToken(): String {
+        val raw = AppPreferences.getString(PREF_DEVICE_TOKEN)
+        return if (isValidDeviceToken(raw)) {
+            raw!!
+        } else {
+            if (!raw.isNullOrEmpty()) {
+                AppPreferences.remove(PREF_DEVICE_TOKEN)
+            }
+            ""
+        }
+    }
+
     private val _isPermissionGrantedFlow = MutableStateFlow(false)
     val isPermissionGrantedFlow: StateFlow<Boolean> = _isPermissionGrantedFlow.asStateFlow()
 
-    private val _deviceTokenFlow = MutableStateFlow(
-        AppPreferences.getString(PREF_DEVICE_TOKEN) ?: ""
-    )
+    private val _deviceTokenFlow = MutableStateFlow(readInitialDeviceToken())
     val deviceTokenFlow: StateFlow<String> = _deviceTokenFlow.asStateFlow()
 
     var isPermissionGranted: Boolean
@@ -37,9 +55,12 @@ object AppNotificationManager {
     var deviceToken: String
         get() = _deviceTokenFlow.value
         set(value) {
-            _deviceTokenFlow.value = value
-            if (value.isNotEmpty()) {
-                AppPreferences.setString(PREF_DEVICE_TOKEN, value)
+            val sanitized = value.takeIf { isValidDeviceToken(it) } ?: ""
+            _deviceTokenFlow.value = sanitized
+            if (sanitized.isNotEmpty()) {
+                AppPreferences.setString(PREF_DEVICE_TOKEN, sanitized)
+            } else {
+                AppPreferences.remove(PREF_DEVICE_TOKEN)
             }
         }
 
@@ -124,9 +145,19 @@ object AppNotificationManager {
         }
 
         // Fallback to saved token or device identifier if FCM token is not yet populated
+        if (!isValidDeviceToken(deviceToken)) {
+            deviceToken = ""
+        }
         if (deviceToken.isEmpty()) {
-            val savedOrDeviceId = AppPreferences.getString(PREF_DEVICE_TOKEN)?.takeIf { it.isNotEmpty() }
-                ?: LegacyKeychain.getToken(KeychainToken.DEVICE_ID)?.takeIf { it.isNotEmpty() }
+            val legacyDeviceId = LegacyKeychain.getToken(KeychainToken.DEVICE_ID)
+            if (legacyDeviceId != null && !isValidDeviceToken(legacyDeviceId)) {
+                LegacyKeychain.deleteToken(KeychainToken.DEVICE_ID)
+            }
+            val savedOrDeviceId = AppPreferences.getString(PREF_DEVICE_TOKEN)?.takeIf { isValidDeviceToken(it) }
+                ?: legacyDeviceId?.takeIf { isValidDeviceToken(it) }
+                ?: AppPreferences.appContext?.let { ctx ->
+                    runCatching { DeviceService(ctx).getDeviceId() }.getOrNull()
+                }?.takeIf { isValidDeviceToken(it) }
             if (!savedOrDeviceId.isNullOrEmpty()) {
                 updateDeviceToken(savedOrDeviceId)
             }

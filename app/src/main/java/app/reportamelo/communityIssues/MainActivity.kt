@@ -1,47 +1,55 @@
 package app.reportamelo.communityIssues
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import app.reportamelo.communityIssues.ui.theme.ReportameloTheme
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.core.util.Consumer
+import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
+import app.reportamelo.communityIssues.ui.screens.WelcomeView
+import app.reportamelo.commons.AppPreferences
+import app.reportamelo.commons.NetworkMonitor
+import app.reportamelo.communityIssues.datamodel.SettingsStore
+import app.reportamelo.communityIssues.helpers.AppNotificationManager
+import app.reportamelo.communityIssues.helpers.DeepLinkRouter
+import app.reportamelo.network.KeychainService
+import app.reportamelo.services.SubscriptionManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppPreferences.init(applicationContext)
+        KeychainService.init(applicationContext)
+        SubscriptionManager.init(applicationContext)
+        SettingsStore.shared.applyTelemetrySetting()
+        AppNotificationManager.checkAuthorizationStatus(applicationContext)
         enableEdgeToEdge()
         setContent {
-            ReportameloTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            val networkMonitor = remember { NetworkMonitor(applicationContext) }
+            
+            CommunityIssueReporterTheme {
+                DependencyProvider(
+                    networkMonitor = networkMonitor
+                ) {
+                    // Start navigation logic (WelcomeView hosts NavController)
+                    WelcomeView()
+                    
+                    // Handle deep links similarly to iOS onOpenURL
+                    DisposableEffect(Unit) {
+                        val listener = Consumer<Intent> { intent ->
+                            intent.data?.let { uri ->
+                                // GIDSignIn equivalent or DeepLinkRouter
+                                DeepLinkRouter.shared.handleIncomingURL(uri)
+                            }
+                        }
+                        addOnNewIntentListener(listener)
+                        onDispose { removeOnNewIntentListener(listener) }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ReportameloTheme {
-        Greeting("Android")
     }
 }

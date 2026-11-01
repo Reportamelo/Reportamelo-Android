@@ -37,10 +37,10 @@ import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
 
 @Composable
 fun ColorGrid(
+    modifier: Modifier = Modifier,
     selectedColor: Color,
     colors: List<Color>,
-    onColorSelected: (Color) -> Unit,
-    modifier: Modifier = Modifier
+    onColorSelected: (Color) -> Unit
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(6),
@@ -93,9 +93,9 @@ enum class MonogramMode {
 
 @Composable
 fun MonogramView(
+    modifier: Modifier = Modifier,
     text: String,
     backgroundColor: Color,
-    modifier: Modifier = Modifier,
     mode: MonogramMode = MonogramMode.PREVIEW
 ) {
     val size = if (mode == MonogramMode.PREVIEW) 80.dp else 200.dp

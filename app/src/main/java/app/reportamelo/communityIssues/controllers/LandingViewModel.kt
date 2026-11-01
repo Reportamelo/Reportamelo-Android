@@ -98,6 +98,16 @@ class LandingViewModel(
         _presentAlert.value = false
     }
 
+    fun navigateTo(destination: LandingNavigation) {
+        _path.value = _path.value + destination
+    }
+
+    fun navigateBack() {
+        if (_path.value.isNotEmpty()) {
+            _path.value = _path.value.dropLast(1)
+        }
+    }
+
     fun handleLogin(payload: AuthPayload, type: LoginType, appState: AuthViewModel) {
         Log.i("LandingViewModel", "handleLogin ${payload.token}")
         Log.i("LandingViewModel", "handleLogin ${payload.email}")
@@ -110,6 +120,7 @@ class LandingViewModel(
                 AppPreferences.remove("names")
                 AppPreferences.remove("user_name")
                 AppPreferences.remove("avatar_url")
+                AppPreferences.remove("google_avatar_url")
                 AppPreferences.remove("selected_avatar_option")
                 AppPreferences.remove("selected_avatar_color")
                 appState.setSelectedCity(null)
@@ -133,7 +144,6 @@ class LandingViewModel(
         CitiesRepository.saveSelectedCity(city)
         KeychainService.save(KeychainKey.USER_TYPE, UserType.GUEST.description)
         KeychainService.save(KeychainKey.PLAN_TYPE, PlanType.FREEMIUM_FOR_GUESTS.value)
-        KeychainService.save(KeychainKey.DEVICE_ID, "completion:state:successfully")
         KeychainService.save(KeychainKey.LANDING_PAGE_COMPLETE, "completion:state:successfully")
         appState.setSelectedCity(city)
         appState.setCameraPosition(
@@ -164,7 +174,6 @@ class LandingViewModel(
             val city = _selectedCity.value
             CitiesRepository.saveSelectedCity(city)
             KeychainService.save(KeychainKey.SESSION_STATE_VERIFICATION, "session:state:valid")
-            KeychainService.save(KeychainKey.DEVICE_ID, "completion:state:successfully")
             KeychainService.save(KeychainKey.LANDING_PAGE_COMPLETE, "completion:state:successfully")
             appState.setSelectedCity(city)
             appState.setCameraPosition(
@@ -306,7 +315,13 @@ class LandingViewModel(
         }
         if (data.profilePicture.isNotEmpty()) {
             userRepository.setAvatar(data.profilePicture)
+            if (data.settings.avatarCreatedFrom == AvatarCreatedFrom.GOOGLE_AUTH ||
+                userRepository.getGoogleAvatar().isEmpty()
+            ) {
+                userRepository.setGoogleAvatar(data.profilePicture)
+            }
         }
+        _userPersonalizationDataModel.value.loadUserInfo()
         _profile.value.refreshFromRepository()
     }
 
@@ -370,6 +385,7 @@ class LandingViewModel(
         AppPreferences.remove("names")
         AppPreferences.remove("user_name")
         AppPreferences.remove("avatar_url")
+        AppPreferences.remove("google_avatar_url")
         AppPreferences.remove("selected_avatar_option")
         AppPreferences.remove("selected_avatar_color")
 

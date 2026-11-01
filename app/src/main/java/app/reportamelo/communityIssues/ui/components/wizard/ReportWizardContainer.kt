@@ -92,7 +92,7 @@ fun ReportWizardContainer(
     if (presentAlert) {
         AlertDialog(
             onDismissRequest = { controller.dismissAlert() },
-            title = { Text("Alert") },
+            title = { Text("Status Update") },
             text = { Text(alertMessage) },
             confirmButton = {
                 TextButton(onClick = { controller.dismissAlert() }) {

@@ -13,8 +13,14 @@ import androidx.compose.ui.unit.dp
 import app.reportamelo.models.PetitionPost
 
 @Composable
-fun PetitionViewPost(petition: PetitionPost) {
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+fun PetitionViewPost(
+    modifier: Modifier = Modifier,
+    petition: PetitionPost
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(32.dp)
@@ -54,10 +60,4 @@ fun PetitionViewPost(petition: PetitionPost) {
             }
         }
     }
-}
-
-// Placeholder for PhotoPreview
-@Composable
-fun PhotoPreview(attachment: Any, height: androidx.compose.ui.unit.Dp, width: androidx.compose.ui.unit.Dp) {
-    Box(modifier = Modifier.size(width, height))
 }

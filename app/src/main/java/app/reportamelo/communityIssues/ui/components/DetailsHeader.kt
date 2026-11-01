@@ -14,8 +14,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DetailsHeader(title: String, description: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+fun DetailsHeader(
+    modifier: Modifier = Modifier,
+    title: String,
+    description: String
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,

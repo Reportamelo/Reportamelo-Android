@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Reportamelo</string>
+    <string name="id_s">ID: %1$s</string>
+    <string name="waiting_for_initial_report">Waiting for initial report</string>
+    <string name="report_confirmed_by_s">Report confirmed by %1$s</string>
+    <string name="waiting_for_confirmation">Waiting for confirmation</string>
+    <string name="no_updates_yet">No updates yet</string>
+    <string name="pending_resolution">Pending resolution</string>
+    <string name="view_evidence_d">View evidence (%1$d)</string>
+    <string name="address_label">Address:</string>
+    <string name="uploaded_by">Uploaded by</string>
+    <string name="no_evidences_yet">No evidences yet</string>
+    <string name="guest_citizen">Guest citizen</string>
+    <string name="reports_submitted">Reports submitted</string>
+    <string name="petitions_published">Petitions published</string>
+    <string name="no_observations">No observations</string>
+    <string name="confirm_user_blocking">Confirm user blocking</string>
+    <string name="i_confirm_that_this_user_violates_our_community_guidelines">I confirm that this user violates our community guidelines.</string>
+    <string name="comments_for_s">Comments for: %1$s</string>
+    <string name="please_tell_us_how_this_problem_affects_you">Please tell us how this problem affects you…</string>
 </resources>

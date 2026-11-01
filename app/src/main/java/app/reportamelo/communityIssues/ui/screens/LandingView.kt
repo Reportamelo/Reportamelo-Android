@@ -29,6 +29,8 @@ fun LandingView(
 
     val currentPath by landingViewModel.path.collectAsState()
     val selectedCity by landingViewModel.selectedCity.collectAsState()
+    val userPersonalizationDataModel by landingViewModel.userPersonalizationDataModel.collectAsState()
+    val profile by landingViewModel.profile.collectAsState()
 
     LaunchedEffect(currentPath) {
         if (currentPath.isNotEmpty()) {
@@ -61,6 +63,12 @@ fun LandingView(
         }
         composable(LandingNavigation.PersonalizeProfile.name) {
             UserPersonalizationView(
+                userPersonalizationDataModel = userPersonalizationDataModel,
+                profile = profile,
+                onBack = {
+                    landingViewModel.navigateBack()
+                    navController.popBackStack()
+                },
                 onNextStep = {
                     navController.navigate(LandingNavigation.EssentialInfo.name)
                 }

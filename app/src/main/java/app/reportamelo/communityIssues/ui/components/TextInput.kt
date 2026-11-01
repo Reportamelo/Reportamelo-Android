@@ -25,6 +25,7 @@ fun TextInput(
     label: String,
     placeholder: String = "",
     validators: List<Validator> = emptyList(),
+    regex: String? = null,
     onValidChange: (Boolean) -> Unit = {},
     errorMessage: String? = null,
     isError: Boolean = false,
@@ -38,6 +39,20 @@ fun TextInput(
     val isDark = isSystemInDarkTheme()
     var hasInteracted by remember { mutableStateOf(false) }
 
+    val compiledCharRegex = remember(regex) {
+        regex?.let { runCatching { "^(?:$it)$".toRegex() }.getOrNull() }
+    }
+
+    val filterWithRegex: (String) -> String = remember(compiledCharRegex) {
+        { input ->
+            if (compiledCharRegex == null) {
+                input
+            } else {
+                input.filter { ch -> compiledCharRegex.matches(ch.toString()) }
+            }
+        }
+    }
+
     val failedValidatorMessage = remember(value, validators) {
         if (validators.isEmpty()) {
             null
@@ -46,9 +61,13 @@ fun TextInput(
         }
     }
 
-    LaunchedEffect(value, validators) {
+    LaunchedEffect(value, validators, compiledCharRegex) {
+        val filtered = filterWithRegex(value)
+        if (filtered != value) {
+            onValueChange(filtered)
+        }
         if (validators.isNotEmpty()) {
-            onValidChange(failedValidatorMessage == null)
+            onValidChange(validators.all { it.fn(filtered) })
         }
     }
 
@@ -82,7 +101,7 @@ fun TextInput(
             value = value,
             onValueChange = { newValue ->
                 hasInteracted = true
-                onValueChange(newValue)
+                onValueChange(filterWithRegex(newValue))
             },
             modifier = fieldModifier,
             placeholder = {

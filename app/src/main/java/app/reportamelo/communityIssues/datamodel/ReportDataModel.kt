@@ -9,15 +9,25 @@ import app.reportamelo.commons.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.Date
 
 // Stubs for missing models
 
-enum class ReportStates {
-    NEW, MODIFYING
+enum class ReportStates(val rawValue: String) {
+    NEW("new"),
+    MODIFYING("modifying");
+
+    companion object {
+        fun fromRawValue(value: String?): ReportStates {
+            return entries.firstOrNull { it.rawValue.equals(value, ignoreCase = true) } ?: NEW
+        }
+    }
 }
 
 
@@ -204,8 +214,19 @@ val mattersToResolve: List<MatterToSolve> = listOf(
 
 
 object LocatorDAO {
+    private val leadingPlusCodeRegex = "^[A-Z0-9]{4,8}\\+[A-Z0-9]{2,4},?\\s*".toRegex(RegexOption.IGNORE_CASE)
+    private val disallowedAddressCharsRegex = "[^\\p{L}0-9\\s,.\\-#]".toRegex()
+
+    fun sanitizeAddress(rawAddress: String): String {
+        val withoutPlusCode = rawAddress.replace(leadingPlusCodeRegex, "")
+        return withoutPlusCode
+            .replace(disallowedAddressCharsRegex, "")
+            .replace("\\s{2,}".toRegex(), " ")
+            .trim()
+    }
+
     fun defaultLocator(
-        address: String = "Paseo General Escalón &, Alameda Franklin Delano Roosevelt, San Salvador",
+        address: String = "Paseo General Escalón, Alameda Franklin Delano Roosevelt, San Salvador",
         lat: Double = 13.7159815,
         lng: Double = -89.1801214
     ): Locator {
@@ -225,7 +246,7 @@ object LocatorDAO {
             isCapitalCityRaw = 1,
             isDepartmentalCapitalRaw = 1,
             cityNameSortKey = "san-salvador",
-            address = address
+            address = sanitizeAddress(address)
         )
     }
 
@@ -245,15 +266,16 @@ object LocatorDAO {
             GeoCodingService(context).getReverseGeocodingResult(lat, lng)
         }.getOrNull()
 
-        val resolvedAddress = reverseResult?.address
+        val rawAddress = reverseResult?.address
             ?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
-            ?: "San Salvador, El Salvador (${String.format(java.util.Locale.US, "%.5f, %.5f", lat, lng)})"
+        val sanitizedAddress = rawAddress?.let { sanitizeAddress(it) }?.takeIf { it.length >= ADDRESS_MIN_CHARACTERS }
+            ?: "San Salvador, El Salvador - ${String.format(java.util.Locale.US, "%.5f, %.5f", lat, lng)}"
 
         val resolvedCityName = reverseResult?.cityName
             ?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
             ?: "San Salvador"
 
-        defaultLocator(address = resolvedAddress, lat = lat, lng = lng).copy(
+        defaultLocator(address = sanitizedAddress, lat = lat, lng = lng).copy(
             thirdLevel = resolvedCityName,
             cityNameSortKey = resolvedCityName.lowercase(java.util.Locale.US).replace(" ", "-")
         )
@@ -353,14 +375,15 @@ class ReportDataModel private constructor() : ViewModel() {
     }
 
     fun setMatterToSolve(matter: MatterToSolve) {
-        val updatedReport = _report.value.copy(
-            matterToSolveId = matter.id,
-            severityId = matter.severity.identifier,
-            issueTypeId = matter.issueType.identifier,
-            suggestedTitle = matter.title,
-            suggestedDescription = matter.description
-        )
-        _report.value = updatedReport
+        _report.update { current ->
+            current.copy(
+                matterToSolveId = matter.id,
+                severityId = matter.severity.identifier,
+                issueTypeId = matter.issueType.identifier,
+                suggestedTitle = matter.title,
+                suggestedDescription = matter.description
+            )
+        }
         _titlePlaceholder.value = matter.title
         _descriptionPlaceholder.value = matter.description
     }
@@ -383,8 +406,9 @@ class ReportDataModel private constructor() : ViewModel() {
 
     fun updateReportSession(reportSession: ReportSessionResponse) {
         _reportSession.value = reportSession
-        val updatedReport = _report.value.copy(reportContainer = reportSession.reportContainer)
-        _report.value = updatedReport
+        _report.update { current ->
+            current.copy(reportContainer = reportSession.reportContainer)
+        }
     }
 
     fun updateReport(report: Report) {
@@ -394,18 +418,36 @@ class ReportDataModel private constructor() : ViewModel() {
         _isAddressValid.value = addressValidator.all { it.fn(report.address) }
     }
 
+    fun updateShareUrl(url: String) {
+        _report.update { current ->
+            current.copy(shareUrl = url)
+        }
+    }
+
+    fun updateReportId(id: String) {
+        _report.update { current ->
+            current.copy(id = id)
+        }
+    }
+
     fun updateTitle(title: String) {
-        _report.value = _report.value.copy(title = title)
+        _report.update { current ->
+            current.copy(title = title)
+        }
         _isTitleValid.value = titleValidator.all { it.fn(title) }
     }
 
     fun updateDescription(description: String) {
-        _report.value = _report.value.copy(description = description)
+        _report.update { current ->
+            current.copy(description = description)
+        }
         _isDescriptionValid.value = descriptionValidator.all { it.fn(description) }
     }
 
     fun updateAddress(address: String) {
-        _report.value = _report.value.copy(address = address)
+        _report.update { current ->
+            current.copy(address = address)
+        }
         _isAddressValid.value = addressValidator.all { it.fn(address) }
     }
 
@@ -444,15 +486,19 @@ class ReportDataModel private constructor() : ViewModel() {
     }
 
     fun updateCoordinate(coordinate: Coordinate) {
-        _report.value = _report.value.copy(coordinate = coordinate)
+        _report.update { current ->
+            current.copy(coordinate = coordinate)
+        }
     }
 
     fun updateLocator(locator: Locator) {
         _locator.value = locator
-        _report.value = _report.value.copy(
-            address = locator.address,
-            cityId = locator.cityId.ifEmpty { _report.value.cityId }
-        )
+        _report.update { current ->
+            current.copy(
+                address = locator.address,
+                cityId = locator.cityId.ifEmpty { current.cityId }
+            )
+        }
         _isAddressValid.value = addressValidator.all { it.fn(locator.address) }
     }
 
@@ -467,44 +513,49 @@ class ReportDataModel private constructor() : ViewModel() {
     }
 
     fun addAttachments(attachments: List<PhotoUploadTracker>) {
-        val reportVal = _report.value
-        val currentAttachments = reportVal.attachments.toMutableList()
+        _report.update { reportVal ->
+            val currentAttachments = reportVal.attachments.toMutableList()
 
-        if (reportVal.reportState == ReportStates.MODIFYING) {
-            val existingKeys = attachments.filter { it.isExisting.value }.map { it.key.value }.toSet()
-            currentAttachments.removeAll { !existingKeys.contains(it.key) }
+            if (reportVal.reportState == ReportStates.MODIFYING) {
+                val existingKeys = attachments.filter { it.isExisting.value }.map { it.key.value }.toSet()
+                currentAttachments.removeAll { !existingKeys.contains(it.key) }
+            }
+
+            val resolvedContainer = reportVal.reportContainer?.takeIf { it.isNotEmpty() }
+                ?: _reportSession.value.reportContainer
+
+            val newAttachments = attachments.filter { !it.isExisting.value }
+            val payload = newAttachments.map { attachment ->
+                PreviewAttachmentRequest(
+                    attachmentId = "",
+                    fileName = attachment.name.value,
+                    type = app.reportamelo.commons.AttachmentType.IMAGE,
+                    key = attachment.key.value,
+                    notes = "",
+                    reportContainer = resolvedContainer
+                )
+            }
+
+            currentAttachments.addAll(payload)
+            reportVal.copy(attachments = currentAttachments)
         }
-
-        val newAttachments = attachments.filter { !it.isExisting.value }
-        val payload = newAttachments.map { attachment ->
-            PreviewAttachmentRequest(
-                attachmentId = "",
-                fileName = attachment.name.value,
-                type = app.reportamelo.commons.AttachmentType.IMAGE,
-                key = attachment.key.value,
-                notes = "",
-                reportContainer = reportVal.reportContainer ?: ""
-            )
-        }
-
-        currentAttachments.addAll(payload)
-        _report.value = reportVal.copy(attachments = currentAttachments)
     }
 
     fun setAttachmentId(groupings: List<ReportAttachmentGrouping>) {
-        val reportVal = _report.value
-        val payload = reportVal.attachments.map { attachment ->
-            PreviewAttachmentRequest(
-                attachmentId = findAttachmentId(groupings, attachment.key),
-                fileName = attachment.fileName,
-                type = attachment.type,
-                key = attachment.key,
-                notes = attachment.notes,
-                reportContainer = attachment.reportContainer
-            )
+        _report.update { reportVal ->
+            val payload = reportVal.attachments.map { attachment ->
+                val resolvedId = findAttachmentId(groupings, attachment.key).ifEmpty { attachment.attachmentId }
+                PreviewAttachmentRequest(
+                    attachmentId = resolvedId,
+                    fileName = attachment.fileName,
+                    type = attachment.type,
+                    key = attachment.key,
+                    notes = attachment.notes,
+                    reportContainer = attachment.reportContainer
+                )
+            }
+            reportVal.copy(attachments = payload.toMutableList())
         }
-
-        _report.value = reportVal.copy(attachments = payload.toMutableList())
     }
 
     fun mapAttachmentsToTrackers(attachments: List<PreviewAttachmentRequest>): List<PhotoUploadTracker> {
@@ -512,7 +563,7 @@ class ReportDataModel private constructor() : ViewModel() {
             PhotoUploadTracker(
                 keyParam = attachment.key,
                 nameParam = attachment.fileName,
-                urlParam = attachment.attachmentId,
+                urlParam = attachment.url.ifEmpty { attachment.attachmentId },
                 isExistingParam = true
             )
         }
@@ -523,7 +574,9 @@ class ReportDataModel private constructor() : ViewModel() {
     }
 
     fun removeAttachments() {
-        _report.value = _report.value.copy(attachments = mutableListOf())
+        _report.update { current ->
+            current.copy(attachments = mutableListOf())
+        }
     }
 
     fun clear() {
@@ -627,10 +680,24 @@ fun parseFlexibleDate(element: JsonElement?): Date? {
     return null
 }
 
+private val reportAttachmentJson = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+    coerceInputValues = true
+}
+
 fun app.reportamelo.models.ReportDAO.toModel(): Report {
     val resolvedCoordinate = this.coordinate ?: app.reportamelo.models.Coordinate(this.lat, this.lng)
     val resolvedTitle = this.title.ifEmpty { this.suggestedTitle }
     val resolvedDescription = this.description.ifEmpty { this.suggestedDescription }
+    val decodedAttachments = this.attachments.mapNotNull { element ->
+        when (element) {
+            is JsonObject -> runCatching {
+                reportAttachmentJson.decodeFromJsonElement(PreviewAttachmentRequest.serializer(), element)
+            }.getOrNull()
+            else -> null
+        }
+    }.toMutableList()
     return Report(
         id = this.id,
         cityId = this.cityId,
@@ -647,8 +714,8 @@ fun app.reportamelo.models.ReportDAO.toModel(): Report {
         createdAt = parseFlexibleDate(this.createdAt) ?: java.util.Date(),
         updatedAt = parseFlexibleDate(this.updatedAt),
         reportedAt = parseFlexibleDate(this.reportedAt),
-        reportState = ReportStates.NEW,
-        attachments = mutableListOf(),
+        reportState = ReportStates.fromRawValue(this.reportState),
+        attachments = decodedAttachments,
         suggestedTitle = this.suggestedTitle.ifEmpty { null },
         suggestedDescription = this.suggestedDescription.ifEmpty { null },
         shareUrl = this.shareUrl,
@@ -660,20 +727,39 @@ fun app.reportamelo.models.ReportDAO.toModel(): Report {
 
 fun Report.toDao(): app.reportamelo.models.Report {
     val currentLocator = ReportDataModel.shared.locator.value
+    val currentSession = ReportDataModel.shared.reportSession.value
+    val resolvedAddress = this.address.ifEmpty { currentLocator.address }
+    val resolvedZipCode = currentLocator.zipCode.ifEmpty { resolvedAddress }
+    val resolvedCityId = this.cityId?.takeIf { it.isNotEmpty() } ?: currentLocator.cityId
+    val resolvedReportContainer = this.reportContainer?.takeIf { it.isNotEmpty() }
+        ?: currentSession.reportContainer
     return app.reportamelo.models.Report(
         id = this.id,
         lat = this.coordinate.lat,
         lng = this.coordinate.lng,
+        coordinate = this.coordinate,
+        address = resolvedAddress,
+        title = this.title,
+        description = this.description,
         issueTypeId = this.issueTypeId,
         severityId = this.severityId,
         statusId = this.statusId,
-        zipCode = this.address.ifEmpty { currentLocator.zipCode },
+        matterToSolveId = this.matterToSolveId,
+        reportedAt = this.reportedAt?.time,
+        cellIndex = this.cellIndex,
+        createdAt = this.createdAt.time,
+        updatedAt = (this.updatedAt ?: Date()).time,
+        zipCode = resolvedZipCode,
         groupingId = currentLocator.groupingId,
-        suggestedTitle = this.title,
-        suggestedDescription = this.description,
+        reportedBy = this.reportedBy,
+        olc = this.olc,
+        suggestedTitle = this.suggestedTitle?.takeIf { it.isNotEmpty() } ?: this.title,
+        suggestedDescription = this.suggestedDescription?.takeIf { it.isNotEmpty() } ?: this.description,
+        reportState = this.reportState.rawValue,
         attachments = this.attachments.map { it.attachmentId }.filter { it.isNotEmpty() },
-        cityId = this.cityId?.takeIf { it.isNotEmpty() } ?: currentLocator.cityId,
-        reportContainer = this.reportContainer,
+        attachmentRequests = this.attachments.toList(),
+        cityId = resolvedCityId,
+        reportContainer = resolvedReportContainer,
         shareUrl = this.shareUrl,
         observations = this.observations
     )

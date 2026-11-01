@@ -2,7 +2,9 @@ package app.reportamelo.communityIssues.controllers
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.reportamelo.commons.AppPreferences
 import app.reportamelo.commons.CommonIntercommunicationErrors
+import app.reportamelo.commons.DeviceService
 import app.reportamelo.communityIssues.datamodel.SettingsStore
 import app.reportamelo.communityIssues.helpers.AppNotificationManager
 import app.reportamelo.models.Coordinate
@@ -144,7 +146,18 @@ class SettingsSubViewModel(
         viewModelScope.launch {
             try {
                 val manager = notificationManager ?: AppNotificationManager
-                val token = manager.deviceToken
+                var token = manager.deviceToken.takeIf { AppNotificationManager.isValidDeviceToken(it) }.orEmpty()
+                if (token.isEmpty()) {
+                    val fallbackDeviceId = AppPreferences.appContext?.let { context ->
+                        runCatching { DeviceService(context).getDeviceId() }.getOrNull()
+                    }?.takeIf { AppNotificationManager.isValidDeviceToken(it) }
+                    if (fallbackDeviceId != null) {
+                        manager.updateDeviceToken(fallbackDeviceId)
+                        token = fallbackDeviceId
+                    } else {
+                        manager.updateDeviceToken("")
+                    }
+                }
                 if (token.isEmpty()) return@launch
 
                 sendDeviceProvider(token)

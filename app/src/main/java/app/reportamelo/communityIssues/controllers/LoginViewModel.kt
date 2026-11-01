@@ -167,6 +167,12 @@ class LoginViewModel(
             credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
             val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            googleIdTokenCredential.profilePictureUri?.let {
+                userRepository.setGoogleAvatar(it.toString())
+            }
+            googleIdTokenCredential.displayName?.takeIf { it.isNotBlank() }?.let {
+                userRepository.setNames(it)
+            }
             return googleIdTokenCredential.idToken
         }
         throw IllegalStateException("Unexpected credential type: ${credential.type}")

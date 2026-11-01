@@ -6,10 +6,12 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
 import android.net.Uri
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.reportamelo.commons.AppPreferences
 import app.reportamelo.commons.AvatarCreatedFrom
+import app.reportamelo.communityIssues.helpers.fromHex
 import app.reportamelo.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +31,35 @@ class ProfileDataModel(
         const val KEY_SELECTED_AVATAR_COLOR = "selected_avatar_color"
         const val KEY_AVATAR_URL = "avatar_url"
         const val DEFAULT_AVATAR_COLOR = "ec9458"
+
+        val defaultBackgroundColors: List<Color> = listOf(
+            // Row 1: Purples, Blues & Magentas
+            Color(red = 0.42f, green = 0.35f, blue = 0.96f), // Indigo
+            Color(red = 0.77f, green = 0.16f, blue = 0.87f), // Purple
+            Color(red = 0.39f, green = 0.21f, blue = 0.65f), // Deep Purple
+            Color(red = 0.05f, green = 0.50f, blue = 0.99f), // Blue
+            Color(red = 0.53f, green = 0.14f, blue = 0.35f), // Crimson
+            Color(red = 0.99f, green = 0.18f, blue = 0.33f), // Pink
+
+            // Row 2: Greens, Teals & Cyans
+            Color(red = 0.00f, green = 0.78f, blue = 0.56f), // Mint
+            Color(red = 0.20f, green = 0.78f, blue = 0.35f), // Green
+            Color(red = 0.55f, green = 0.81f, blue = 0.13f), // Lime
+            Color(red = 0.00f, green = 0.75f, blue = 0.88f), // Cyan
+            Color(red = 0.10f, green = 0.66f, blue = 0.87f), // Sky Blue
+            Color(red = 0.07f, green = 0.85f, blue = 0.82f), // Teal
+
+            // Row 3: Yellows, Oranges & Reds
+            Color(red = 1.00f, green = 0.81f, blue = 0.00f), // Yellow
+            Color(red = 1.00f, green = 0.55f, blue = 0.15f), // Amber
+            Color.fromHex(DEFAULT_AVATAR_COLOR),             // Orange (#ec9458 / #DF7E3E)
+            Color(red = 1.00f, green = 0.23f, blue = 0.19f), // Red
+            Color(red = 0.90f, green = 0.14f, blue = 0.44f), // Rose
+            Color(red = 0.80f, green = 0.12f, blue = 0.75f)  // Fuchsia
+        )
     }
+
+    val backgroundColors: List<Color> = defaultBackgroundColors
 
     private val _profileImage = MutableStateFlow<Bitmap?>(null)
     val profileImage: StateFlow<Bitmap?> = _profileImage.asStateFlow()
@@ -48,6 +78,9 @@ class ProfileDataModel(
 
     private val _avatarURL = MutableStateFlow<Uri?>(userRepository.getAvatar())
     val avatarURL: StateFlow<Uri?> = _avatarURL.asStateFlow()
+
+    private val _googleAvatarURL = MutableStateFlow<Uri?>(userRepository.getProfilePictureURL())
+    val googleAvatarURL: StateFlow<Uri?> = _googleAvatarURL.asStateFlow()
 
     private val _selectedAvatarOptionView = MutableStateFlow(loadSavedAvatarOption())
     val selectedAvatarOptionView: StateFlow<AvatarCreatedFrom> = _selectedAvatarOptionView.asStateFlow()
@@ -72,6 +105,7 @@ class ProfileDataModel(
         _isGuest.value = userRepository.isGuestUser()
         _userName.value = userRepository.getName()
         _avatarURL.value = userRepository.getAvatar()
+        _googleAvatarURL.value = userRepository.getProfilePictureURL()
         _selectedAvatarOptionView.value = loadSavedAvatarOption()
         _selectedAvatarColor.value = AppPreferences.getString(KEY_SELECTED_AVATAR_COLOR) ?: DEFAULT_AVATAR_COLOR
         if (_isGuest.value) {
@@ -111,26 +145,36 @@ class ProfileDataModel(
             if (url != null) {
                 AppPreferences.setString(KEY_AVATAR_URL, url.toString())
                 _avatarURL.value = url
+                _googleAvatarURL.value = url
             }
         }
     }
 
-    fun applyGoogleAvatar(completion: () -> Unit) {
-        val url = userRepository.getProfilePictureURL() ?: return
-        _avatarURL.value = url
+    fun applyGoogleAvatar(completion: () -> Unit = {}) {
+        val urlString = userRepository.getProfilePicture()
+        val url = userRepository.getProfilePictureURL()
+        _profileImage.value = null
+        if (urlString.isNotEmpty()) {
+            userRepository.setAvatar(urlString)
+        }
+        if (url != null) {
+            _avatarURL.value = url
+            _googleAvatarURL.value = url
+        }
+        setSelectedAvatarOptionView(AvatarCreatedFrom.GOOGLE_AUTH)
         completion()
     }
 
     fun uploadProfilePicture(image: Bitmap, from: AvatarCreatedFrom) {
         _isUploading.value = true
+        _profileImage.value = image
         viewModelScope.launch {
             try {
                 val urlString = userRepository.changeAvatar(image, from)
                 _avatarURL.value = userRepository.getAvatar() ?: Uri.parse(urlString)
-                _profileImage.value = image
                 userRepository.refresh()
-            } catch (e: Exception) {
-                _profileImage.value = image
+            } catch (_: Exception) {
+                // Keep local bitmap preview even if remote upload fails
             } finally {
                 _isUploading.value = false
             }
@@ -161,19 +205,21 @@ class ProfileDataModel(
     }
 
     fun getMonogram(): String {
-        val currentName = _userName.value.ifBlank { userRepository.getName() }
+        val currentName = _userName.value.ifBlank { userRepository.getName() }.trim()
         return currentName.take(1).uppercase()
     }
 
     fun getInitials(): String {
         val currentName = _userName.value.ifBlank { userRepository.getName() }.trim()
-        val components = currentName.split(" ").filter { it.isNotEmpty() }
-        return if (components.size >= 2) {
-            val first = components[0].take(1)
-            val second = components[1].take(1)
-            "$first$second".uppercase()
-        } else {
-            currentName.take(2).uppercase()
+        val words = currentName.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        return when {
+            words.size >= 2 -> {
+                val first = words[0].take(1)
+                val second = words[1].take(1)
+                "$first$second".uppercase()
+            }
+            words.size == 1 -> words[0].take(2).uppercase()
+            else -> ""
         }
     }
 }

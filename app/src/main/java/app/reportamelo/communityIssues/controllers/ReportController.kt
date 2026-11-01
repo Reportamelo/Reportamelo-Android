@@ -2,6 +2,8 @@ package app.reportamelo.communityIssues.controllers
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.reportamelo.commons.CommonIntercommunicationErrors
+import app.reportamelo.commons.SuccessfulResult
 import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.datamodel.ReportStates
 import app.reportamelo.communityIssues.datamodel.SettingsStore
@@ -19,8 +21,10 @@ import app.reportamelo.repository.CounterRepository
 import app.reportamelo.repository.ReportRepository
 import app.reportamelo.repository.ShareRepository
 import app.reportamelo.repository.UserRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +36,45 @@ import java.util.UUID
 
 class ReportError(message: String) : Exception(message)
 
-class ReportController : ViewModel() {
+class ReportController(
+    private val startReportProvider: suspend () -> CustomizedResponse<ReportSessionResponse> = {
+        ReportRepository.start()
+    },
+    private val submitGroupedAttachmentsProvider: suspend (List<GroupedAttachmentPayload>) -> CustomizedResponse<List<ReportAttachmentGrouping>> = { payload ->
+        ReportRepository.submitGroupedAttachments(payload)
+    },
+    private val createReportProvider: suspend (
+        app.reportamelo.models.Report,
+        String?,
+        String?,
+        String?,
+        String?,
+        String?,
+        String?
+    ) -> String = { report, countryCode, cityId, shareIndexHash, reportContainer, groupingNameCode, groupingId ->
+        ReportRepository.create(
+            report = report,
+            countryCode = countryCode,
+            cityId = cityId,
+            shareIndexHash = shareIndexHash,
+            reportContainer = reportContainer,
+            groupingNameCode = groupingNameCode,
+            groupingId = groupingId
+        )
+    },
+    private val updateReportProvider: suspend (app.reportamelo.models.Report) -> SuccessfulResult = { report ->
+        ReportRepository.update(report)
+    },
+    private val createShareableLinkProvider: suspend (ReportToShare) -> String = { payload ->
+        ShareRepository.createShareableLink(payload)
+    },
+    private val isGuestUserProvider: suspend () -> Boolean = {
+        UserRepository.shared.isGuestUser()
+    },
+    private val increaseCounterProvider: suspend () -> Unit = {
+        CounterRepository.increase()
+    }
+) : ViewModel() {
 
     private val _reportId = MutableStateFlow("")
     val reportId: StateFlow<String> = _reportId.asStateFlow()
@@ -72,9 +114,11 @@ class ReportController : ViewModel() {
                     model.updateReportSession(reportSession)
                     model.setLocator(countryCode, cityId)
                 } else {
-                    val result = ReportRepository.start()
+                    val result = startReportProvider()
                     model.updateReportSession(result.data)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 val datePart = SimpleDateFormat("yyMMdd", Locale.US).format(Date())
                 val fallbackSession = ReportSessionResponse(
@@ -93,16 +137,16 @@ class ReportController : ViewModel() {
         val resolvedReportId = currentReport.id?.takeIf { it.isNotEmpty() } ?: model.buildReportId()
 
         val url = runCatching {
-            ShareRepository.createShareableLink(
-                payload = ReportToShare(
+            createShareableLinkProvider(
+                ReportToShare(
                     reportId = resolvedReportId,
                     title = currentReport.title,
                     city = currentLocator.thirdLevel,
                     country = currentLocator.firstLevel,
                     description = currentReport.description,
-                    severity = currentReport.severity.name.lowercase(Locale.ROOT),
-                    issueType = currentReport.issueType.name.lowercase(Locale.ROOT),
-                    status = currentReport.status.name.lowercase(Locale.ROOT),
+                    severity = currentReport.severity.title,
+                    issueType = currentReport.issueType.title,
+                    status = currentReport.status.title,
                     coordinate = currentReport.coordinate,
                     cellIndex = currentReport.cellIndex,
                     openCodeLocation = currentReport.olc ?: "",
@@ -115,18 +159,21 @@ class ReportController : ViewModel() {
         }
 
         _shareableLink.value = url
-        model.updateReport(model.report.value.copy(shareUrl = url))
+        model.updateShareUrl(url)
     }
 
     suspend fun createReport(using: ReportDataModel) {
-        val result = ReportRepository.create(
-            report = using.report.value.toDao(),
-            shareIndexHash = using.reportSession.value.shareIndexHash,
-            reportContainer = using.reportSession.value.reportContainer,
-            groupingNameCode = using.locator.value.groupingNameCode,
-            groupingId = using.locator.value.groupingId
+        val currentLocator = using.locator.value
+        val result = createReportProvider(
+            using.report.value.toDao(),
+            currentLocator.countryCode,
+            currentLocator.cityId,
+            using.reportSession.value.shareIndexHash,
+            using.reportSession.value.reportContainer,
+            currentLocator.groupingNameCode,
+            currentLocator.groupingId
         )
-        using.updateReport(using.report.value.copy(id = result))
+        using.updateReportId(result)
         _reportId.value = result
     }
 
@@ -155,21 +202,34 @@ class ReportController : ViewModel() {
             )
         }
 
-        return ReportRepository.submitGroupedAttachments(payload)
+        return submitGroupedAttachmentsProvider(payload)
     }
 
-    suspend fun modify(using: ReportDataModel, attachments: List<PhotoUploadTracker>) {
-        try {
-            val id = using.report.value.id ?: return
+    suspend fun modify(using: ReportDataModel, attachments: List<PhotoUploadTracker>): Boolean {
+        return try {
+            val id = using.report.value.id ?: return false
             _reportId.value = id
 
             val url = using.report.value.shareUrl ?: ""
             _shareableLink.value = url
 
-            ReportRepository.update(using.report.value.toDao())
+            updateReportProvider(using.report.value.toDao())
             submitGroupedAttachments(attachments, using)
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: CommonIntercommunicationErrors.InvalidPetition) {
+            showAlert(e.message)
+            false
+        } catch (e: CommonIntercommunicationErrors.NetworkError) {
+            showAlert(e.message)
+            false
+        } catch (e: CommonIntercommunicationErrors.ServerError) {
+            showAlert("Something went wrong, please try again later")
+            false
         } catch (e: Exception) {
-            showAlert(e.localizedMessage ?: "Error")
+            showAlert(e.localizedMessage ?: "Something went wrong, please try again later")
+            false
         }
     }
 
@@ -184,27 +244,31 @@ class ReportController : ViewModel() {
             model.addAttachments(attachments)
 
             if (model.report.value.reportState == ReportStates.MODIFYING) {
-                modify(model, attachments)
-                model.removeAttachments()
-                onComplete()
+                val modified = modify(model, attachments)
+                if (modified) {
+                    model.removeAttachments()
+                    onComplete()
+                }
             } else {
                 try {
-                    val deferredGroup1 = async {
-                        val result = submitGroupedAttachments(attachments, model)
-                        if (result != null) {
-                            model.setAttachmentId(result.data)
+                    coroutineScope {
+                        val deferredGroup1 = async {
+                            val result = submitGroupedAttachments(attachments, model)
+                            if (result != null) {
+                                model.setAttachmentId(result.data)
+                            }
+                            createReport(model)
                         }
-                        createReport(model)
-                    }
 
-                    val deferredGroup2 = async {
-                        createShareableLink(model)
-                        if (!UserRepository.shared.isGuestUser()) {
-                            runCatching { CounterRepository.getCount() }
+                        val deferredGroup2 = async {
+                            createShareableLink(model)
+                            if (!isGuestUserProvider()) {
+                                runCatching { increaseCounterProvider() }
+                            }
                         }
-                    }
 
-                    awaitAll(deferredGroup1, deferredGroup2)
+                        awaitAll(deferredGroup1, deferredGroup2)
+                    }
 
                     model.removeAttachments()
 
@@ -212,8 +276,16 @@ class ReportController : ViewModel() {
                     SettingsStore.shared.lastReportDate = Date()
 
                     onComplete()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: CommonIntercommunicationErrors.InvalidPetition) {
+                    showAlert(e.message)
+                } catch (e: CommonIntercommunicationErrors.NetworkError) {
+                    showAlert(e.message)
+                } catch (e: CommonIntercommunicationErrors.ServerError) {
+                    showAlert("Something went wrong, please try again later")
                 } catch (e: Exception) {
-                    showAlert(e.localizedMessage ?: "Error")
+                    showAlert(e.localizedMessage ?: "Something went wrong, please try again later")
                 }
             }
 

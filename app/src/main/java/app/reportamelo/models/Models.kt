@@ -1,11 +1,6 @@
 package app.reportamelo.models
 
-enum class AttachmentState {
-    PENDING, CONFIRMED, INAPPROPRIATE, DELETED, MANUAL_REVISION
-}
+import app.reportamelo.commons.ReportAttachmentState
 
-data class Milestone(
-    val title: String,
-    val date: String,
-    val description: String
-)
+typealias AttachmentState = ReportAttachmentState
+
