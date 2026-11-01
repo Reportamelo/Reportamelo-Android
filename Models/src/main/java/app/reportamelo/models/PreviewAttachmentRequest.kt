@@ -1,5 +1,6 @@
 package app.reportamelo.models
 
+import app.reportamelo.commons.Apis
 import app.reportamelo.commons.AttachmentType
 import kotlinx.serialization.Serializable
 
@@ -11,4 +12,10 @@ data class PreviewAttachmentRequest(
     var key: String = "",
     var notes: String? = null,
     var reportContainer: String = ""
-)
+) {
+    val url: String
+        get() {
+            val rawKey = key.takeIf { it.isNotBlank() } ?: return ""
+            return "${Apis.baseURL.trimEnd('/')}/${rawKey.trimStart('/')}"
+        }
+}

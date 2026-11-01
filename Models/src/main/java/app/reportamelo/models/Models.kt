@@ -157,18 +157,30 @@ typealias StartReportResponse = CustomizedResponse<ReportSessionResponse>
 @Serializable
 data class Report(
     val id: String? = null,
-    val lat: Double,
-    val lng: Double,
-    val issueTypeId: Int,
-    val severityId: Int,
-    val statusId: Int,
-    val zipCode: String,
+    val lat: Double = 0.0,
+    val lng: Double = 0.0,
+    val coordinate: Coordinate = Coordinate(lat, lng),
+    val address: String = "",
+    val title: String = "",
+    val description: String = "",
+    val issueTypeId: Int = 1,
+    val severityId: Int = 1,
+    val statusId: Int = 1,
+    val matterToSolveId: Int = 1,
+    val reportedAt: Long? = null,
+    val cellIndex: String = "",
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val zipCode: String = "",
     val groupingId: String? = null,
     val reportedBy: String? = null,
-    val suggestedTitle: String,
-    val suggestedDescription: String,
+    val olc: String? = null,
+    val suggestedTitle: String = "",
+    val suggestedDescription: String = "",
+    val reportState: String? = "new",
     val attachments: List<String> = emptyList(),
-    val cityId: String,
+    val attachmentRequests: List<PreviewAttachmentRequest> = emptyList(),
+    val cityId: String = "",
     val reportContainer: String? = null,
     val shareUrl: String? = null,
     val observations: String? = null
@@ -242,7 +254,22 @@ data class Attachment(
     val key: String? = null,
     val fileName: String? = null,
     val reportContainer: String? = null
-)
+) {
+    val url: String
+        get() {
+            val rawKey = key?.takeIf { it.isNotBlank() } ?: return ""
+            return "${Apis.baseURL.trimEnd('/')}/${rawKey.trimStart('/')}"
+        }
+
+    val previewUrl: String
+        get() = url
+
+    val createdDate: String
+        get() {
+            val millis = if (createdAtRaw < 100_000_000_000L) createdAtRaw * 1000L else createdAtRaw
+            return app.reportamelo.commons.utils.formatRelativeEpochMillis(millis)
+        }
+}
 
 @Serializable
 data class IssueUpdate(

@@ -23,9 +23,11 @@ data class MapExplorerReport(
     val cityId: String,
     val petitionId: String? = null,
     val shareUrl: String,
-    val attachments: List<PreviewAttachment>,
+    val attachments: List<PreviewAttachment> = emptyList(),
     val assignedTo: String? = null,
     val institutionId: String? = null,
     val reportContainer: String,
-    val profileId: String
+    val profileId: String,
+    val ocl: String? = null,
+    val observations: String? = null
 )
