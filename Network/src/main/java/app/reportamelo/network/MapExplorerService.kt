@@ -4,13 +4,13 @@ import app.reportamelo.commons.Apis
 import app.reportamelo.models.MapExplorerQueryParams
 import app.reportamelo.models.MapExplorerReport
 
-class MapExplorerService(
+open class MapExplorerService(
     private val client: ServiceClient = ServiceClient(
         baseURL = Apis.apiV1, 
         decoderType = DecoderType.MESSAGE_PACK
     )
 ) {
-    suspend fun reports(
+    open suspend fun reports(
         q: MapExplorerQueryParams,
         headers: Map<String, String> = emptyMap()
     ): List<MapExplorerReport> {
@@ -22,7 +22,7 @@ class MapExplorerService(
         )
     }
 
-    suspend fun report(
+    open suspend fun report(
         id: String,
         headers: Map<String, String> = emptyMap()
     ): MapExplorerReport {

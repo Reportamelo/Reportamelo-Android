@@ -7,37 +7,37 @@ import app.reportamelo.network.MultipartFormFile
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
-class UserService(private val client: ServiceClient) {
+open class UserService(private val client: ServiceClient = ServiceClient(Apis.apiV1)) {
 
-    suspend fun login(payload: OAuthSignInPayload, headers: Map<String, String>): LoginWithOAuthProviderResponse {
+    open suspend fun login(payload: OAuthSignInPayload, headers: Map<String, String>): LoginWithOAuthProviderResponse {
         return client.post("auth/Google/tokenSignInOrLogin", payload, headers)
     }
 
-    suspend fun loginAsGuest(headers: Map<String, String>): LoginWithOAuthProviderResponse {
+    open suspend fun loginAsGuest(headers: Map<String, String>): LoginWithOAuthProviderResponse {
         return client.post("auth/guest/generate/session", emptyMap<String, String>(), headers)
     }
 
-    suspend fun signInOrLoginWithApple(payload: AuthPayload, headers: Map<String, String>): LoginWithOAuthProviderResponse {
+    open suspend fun signInOrLoginWithApple(payload: AuthPayload, headers: Map<String, String>): LoginWithOAuthProviderResponse {
         return client.post("auth/Apple/tokenSignInOrLogin", payload, headers, withOAuth = true)
     }
 
-    suspend fun refresh(headers: Map<String, String>) {
+    open suspend fun refresh(headers: Map<String, String>) {
         client.get<EmptyResponse>("auth/refresh/token", headers, withOAuth = true)
     }
 
-    suspend fun checkAvailability(userName: String, headers: Map<String, String>): GenericResponse {
+    open suspend fun checkAvailability(userName: String, headers: Map<String, String>): GenericResponse {
         return client.post("user/check/availability", mapOf("userName" to userName), headers, withOAuth = true)
     }
 
-    suspend fun modify(notifications: Notifications, headers: Map<String, String>): GenericResponse {
+    open suspend fun modify(notifications: Notifications, headers: Map<String, String>): GenericResponse {
         return client.patch("user/notifications", notifications, headers, withOAuth = true)
     }
 
-    suspend fun change(userName: String, headers: Map<String, String>): GenericResponse {
+    open suspend fun change(userName: String, headers: Map<String, String>): GenericResponse {
         return client.patch("user/userName", mapOf("userName" to userName), headers, withOAuth = true)
     }
 
-    suspend fun completeLandingPage(): GenericResponse {
+    open suspend fun completeLandingPage(): GenericResponse {
         return client.patch(
             "user/landing/completed",
             emptyMap<String, String>(),
@@ -46,7 +46,7 @@ class UserService(private val client: ServiceClient) {
         )
     }
 
-    suspend fun send(deviceToken: DeviceTokenRequest, headers: Map<String, String>): GenericResponse {
+    open suspend fun send(deviceToken: DeviceTokenRequest, headers: Map<String, String>): GenericResponse {
         return client.patch("user/device/token", deviceToken, headers, withOAuth = true)
     }
 

@@ -19,6 +19,18 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField("boolean", "ENABLE_NETWORK_LOGS", "true")
+        }
+        release {
+            buildConfigField("boolean", "ENABLE_NETWORK_LOGS", "false")
+        }
+    }
 }
 val kotlinxSerializationMsgPackVersion = project.findProperty("kotlinxSerializationMsgPackVersion")
 val ktor_version = project.findProperty("ktor_version")

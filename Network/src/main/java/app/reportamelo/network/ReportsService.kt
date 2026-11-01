@@ -27,27 +27,49 @@ class ReportsService(private val client: ServiceClient = ServiceClient(baseURL =
         )
     }
 
+    private fun toReportDAO(report: Report): ReportDAO {
+        val serializedAttachments = if (report.attachmentRequests.isNotEmpty()) {
+            report.attachmentRequests.map {
+                client.json.encodeToJsonElement(PreviewAttachmentRequest.serializer(), it)
+            }
+        } else {
+            report.attachments.map { JsonPrimitive(it) }
+        }
+        return ReportDAO(
+            id = report.id,
+            coordinate = report.coordinate,
+            lat = report.lat,
+            lng = report.lng,
+            address = report.address.ifEmpty { report.zipCode },
+            title = report.title.ifEmpty { report.suggestedTitle },
+            description = report.description.ifEmpty { report.suggestedDescription },
+            issueTypeId = report.issueTypeId,
+            severityId = report.severityId,
+            statusId = report.statusId,
+            matterToSolveId = report.matterToSolveId,
+            reportedAt = report.reportedAt?.let { JsonPrimitive(it) },
+            cellIndex = report.cellIndex,
+            createdAt = report.createdAt?.let { JsonPrimitive(it) },
+            updatedAt = report.updatedAt?.let { JsonPrimitive(it) },
+            zipCode = report.zipCode,
+            groupingId = report.groupingId,
+            reportedBy = report.reportedBy,
+            olc = report.olc,
+            suggestedTitle = report.suggestedTitle,
+            suggestedDescription = report.suggestedDescription,
+            reportState = report.reportState,
+            attachments = serializedAttachments,
+            cityId = report.cityId,
+            reportContainer = report.reportContainer,
+            shareUrl = report.shareUrl,
+            observations = report.observations
+        )
+    }
+
     suspend fun createReport(report: Report, headers: Map<String, String>): GenericResponse {
         return client.post(
             path = "reports/create",
-            body = ReportDAO(
-                id = report.id,
-                lat = report.lat,
-                lng = report.lng,
-                issueTypeId = report.issueTypeId,
-                severityId = report.severityId,
-                statusId = report.statusId,
-                zipCode = report.zipCode,
-                groupingId = report.groupingId,
-                reportedBy = report.reportedBy,
-                suggestedTitle = report.suggestedTitle,
-                suggestedDescription = report.suggestedDescription,
-                attachments = report.attachments.map { JsonPrimitive(it) },
-                cityId = report.cityId,
-                reportContainer = report.reportContainer,
-                shareUrl = report.shareUrl,
-                observations = report.observations
-            ),
+            body = toReportDAO(report),
             headers = headers,
             withOAuth = true
         )
@@ -119,24 +141,7 @@ class ReportsService(private val client: ServiceClient = ServiceClient(baseURL =
     suspend fun updateReport(reportId: String, report: Report, headers: Map<String, String>): GenericResponse {
         return client.patch(
             path = "reports/$reportId",
-            body = ReportDAO(
-                id = report.id,
-                lat = report.lat,
-                lng = report.lng,
-                issueTypeId = report.issueTypeId,
-                severityId = report.severityId,
-                statusId = report.statusId,
-                zipCode = report.zipCode,
-                groupingId = report.groupingId,
-                reportedBy = report.reportedBy,
-                suggestedTitle = report.suggestedTitle,
-                suggestedDescription = report.suggestedDescription,
-                attachments = report.attachments.map { JsonPrimitive(it) },
-                cityId = report.cityId,
-                reportContainer = report.reportContainer,
-                shareUrl = report.shareUrl,
-                observations = report.observations
-            ),
+            body = toReportDAO(report),
             headers = headers,
             withOAuth = true
         )
