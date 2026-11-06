@@ -4,7 +4,27 @@ import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.net.Uri
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import app.reportamelo.communityIssues.R
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
+
+@Composable
+fun rememberMapStyleOptions(isDarkTheme: Boolean = isSystemInDarkTheme()): MapStyleOptions? {
+    val context = LocalContext.current
+    return remember(isDarkTheme) {
+        if (isDarkTheme) {
+            runCatching {
+                MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_dark)
+            }.getOrNull()
+        } else {
+            null
+        }
+    }
+}
 
 fun distance(from: LatLng, to: LatLng): Float {
     val results = FloatArray(1)

@@ -52,6 +52,7 @@ import app.reportamelo.communityIssues.datamodel.AuthViewModel
 import app.reportamelo.communityIssues.datamodel.SettingsStore
 import app.reportamelo.communityIssues.helpers.DeepLinkRouter
 import app.reportamelo.communityIssues.helpers.maps.SearchCompleter
+import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.communityIssues.ui.components.BasicInformationView
 import app.reportamelo.communityIssues.ui.components.CustomTabBar
 import app.reportamelo.communityIssues.ui.components.DetailView
@@ -203,12 +204,21 @@ fun MapExplorerView(
         controller.setSearchExpanded(false)
     }
 
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleOptions = rememberMapStyleOptions(isDarkTheme = isDarkTheme)
+    val mapProperties = remember(hasLocationPermission, mapStyleOptions) {
+        MapProperties(
+            isMyLocationEnabled = hasLocationPermission,
+            mapStyleOptions = mapStyleOptions
+        )
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         val topMapPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 68.dp
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(isMyLocationEnabled = hasLocationPermission),
+            properties = mapProperties,
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = false,
                 zoomControlsEnabled = false,

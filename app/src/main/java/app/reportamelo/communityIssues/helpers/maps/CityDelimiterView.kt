@@ -13,11 +13,15 @@ import androidx.compose.ui.graphics.Color
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
-fun CityDelimiterView(context: Context) {
+fun CityDelimiterView(
+    context: Context,
+    modifier: Modifier = Modifier
+) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(13.701270, -89.224432), 11f)
     }
@@ -31,9 +35,15 @@ fun CityDelimiterView(context: Context) {
         }
     }
 
+    val mapStyleOptions = rememberMapStyleOptions()
+    val mapProperties = remember(mapStyleOptions) {
+        MapProperties(mapStyleOptions = mapStyleOptions)
+    }
+
     GoogleMap(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
+        properties = mapProperties
     ) {
         cityBoundaries.forEach { polygonCoords ->
             Polygon(

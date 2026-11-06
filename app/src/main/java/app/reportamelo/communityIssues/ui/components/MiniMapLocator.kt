@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import app.reportamelo.communityIssues.datamodel.Locator
 import app.reportamelo.communityIssues.datamodel.LocatorDAO
+import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.models.Coordinate
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -200,9 +201,15 @@ fun MiniMapLocator(
                     false
                 }
         ) {
+            val mapStyleOptions = rememberMapStyleOptions()
+            val mapProperties = remember(mapStyleOptions) {
+                MapProperties(mapStyleOptions = mapStyleOptions)
+            }
+
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                properties = mapProperties,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
                     zoomGesturesEnabled = false, // Disabled so zoom does not interfere with vertical scroll

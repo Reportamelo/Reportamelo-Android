@@ -33,6 +33,7 @@ import app.reportamelo.commons.GeoCodingService
 import app.reportamelo.communityIssues.datamodel.Locator
 import app.reportamelo.communityIssues.datamodel.LocatorDAO
 import app.reportamelo.communityIssues.datamodel.ReportDataModel
+import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.models.Coordinate
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -294,10 +295,18 @@ fun MapPickerScreen(
                             false
                         }
                 ) {
+                    val mapStyleOptions = rememberMapStyleOptions()
+                    val mapProperties = remember(selectedMode.mapType, mapStyleOptions) {
+                        MapProperties(
+                            mapType = selectedMode.mapType,
+                            mapStyleOptions = if (selectedMode == MapModeOption.STANDARD) mapStyleOptions else null
+                        )
+                    }
+
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
-                        properties = MapProperties(mapType = selectedMode.mapType),
+                        properties = mapProperties,
                         uiSettings = MapUiSettings(
                             zoomControlsEnabled = false,
                             zoomGesturesEnabled = true,
