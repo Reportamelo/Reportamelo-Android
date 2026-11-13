@@ -43,6 +43,7 @@ import app.reportamelo.communityIssues.helpers.fromHex
 import app.reportamelo.communityIssues.helpers.toHex
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun CustomBlurryOverlay(
@@ -168,7 +169,7 @@ fun ProfileImage(
                 profileImage != null -> {
                     Image(
                         bitmap = profileImage!!.asImageBitmap(),
-                        contentDescription = "Profile Image",
+                        contentDescription = stringResource(R.string.profile_image),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -176,7 +177,7 @@ fun ProfileImage(
                 isGuest -> {
                     Image(
                         painter = painterResource(id = R.drawable.user_b),
-                        contentDescription = "Guest Avatar",
+                        contentDescription = stringResource(R.string.guest_avatar),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -186,7 +187,7 @@ fun ProfileImage(
                     selectedOption != AvatarCreatedFrom.INITIALS -> {
                     SubcomposeAsyncImage(
                         model = avatarURL.toString(),
-                        contentDescription = "Profile Image",
+                        contentDescription = stringResource(R.string.profile_image),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                         loading = {
@@ -233,7 +234,7 @@ fun ProfileImage(
         ) {
             Icon(
                 imageVector = Icons.Filled.Edit,
-                contentDescription = "Edit Profile Picture",
+                contentDescription = stringResource(R.string.edit_profile_picture),
                 tint = editIconTint,
                 modifier = Modifier.size(16.dp)
             )
@@ -284,7 +285,7 @@ fun ProfileImage(
                 when (currentView) {
                     AvatarCreatedFrom.OPTIONS_SELECTOR -> {
                         AvatarSheetHeaderView(
-                            title = "Create your Avatar from",
+                            title = stringResource(R.string.create_your_avatar_from),
                             onClose = { profile.setShowPicker(false) }
                         )
 
@@ -313,7 +314,7 @@ fun ProfileImage(
                                 if (targetUrl != null) {
                                     SubcomposeAsyncImage(
                                         model = targetUrl.toString(),
-                                        contentDescription = "Google Auth Avatar",
+                                        contentDescription = stringResource(R.string.google_auth_avatar),
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize(),
                                         loading = {
@@ -341,7 +342,7 @@ fun ProfileImage(
                             }
 
                             AvatarOptionItem(
-                                label = "Monogram",
+                                label = stringResource(R.string.monogram),
                                 isSelected = selectedOption == AvatarCreatedFrom.MONOGRAM,
                                 onClick = {
                                     currentView = AvatarCreatedFrom.MONOGRAM
@@ -355,7 +356,7 @@ fun ProfileImage(
                             }
 
                             AvatarOptionItem(
-                                label = "Initials",
+                                label = stringResource(R.string.initials),
                                 isSelected = selectedOption == AvatarCreatedFrom.INITIALS,
                                 onClick = {
                                     currentView = AvatarCreatedFrom.INITIALS
@@ -378,7 +379,7 @@ fun ProfileImage(
                             verticalAlignment = Alignment.Top
                         ) {
                             AvatarOptionItem(
-                                label = "Photo",
+                                label = stringResource(R.string.photo),
                                 isSelected = selectedOption == AvatarCreatedFrom.PHOTO,
                                 onClick = {
                                     galleryLauncher.launch("image/*")
@@ -386,13 +387,13 @@ fun ProfileImage(
                             ) {
                                 AvatarIconPreviewCircle(
                                     icon = Icons.Outlined.PhotoLibrary,
-                                    contentDescription = "Photo",
+                                    contentDescription = stringResource(R.string.photo),
                                     backgroundColor = googleFallbackColor
                                 )
                             }
 
                             AvatarOptionItem(
-                                label = "Camera",
+                                label = stringResource(R.string.camera),
                                 isSelected = selectedOption == AvatarCreatedFrom.CAMERA,
                                 onClick = {
                                     cameraLauncher.launch(null)
@@ -400,7 +401,7 @@ fun ProfileImage(
                             ) {
                                 AvatarIconPreviewCircle(
                                     icon = Icons.Outlined.CameraAlt,
-                                    contentDescription = "Camera",
+                                    contentDescription = stringResource(R.string.camera),
                                     backgroundColor = googleFallbackColor
                                 )
                             }
@@ -420,7 +421,7 @@ fun ProfileImage(
                         }
 
                         AvatarSheetHeaderView(
-                            title = "Edit your Monogram",
+                            title = stringResource(R.string.edit_your_monogram),
                             onClose = {
                                 currentView = AvatarCreatedFrom.OPTIONS_SELECTOR
                             }
@@ -451,7 +452,7 @@ fun ProfileImage(
                         Spacer(modifier = Modifier.height(20.dp))
 
                         ThemedButton(
-                            message = "Save",
+                            message = stringResource(R.string.save),
                             type = ThemedButtonType.OUTLINE,
                             style = ThemedButtonStyle.NORMAL,
                             isLoading = isUploading,
@@ -505,7 +506,7 @@ private fun AvatarSheetHeaderView(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.close),
                 tint = if (isDark) Color.White else Color.Black,
                 modifier = Modifier.size(20.dp)
             )
@@ -579,7 +580,7 @@ private fun AvatarOptionItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = "Selected",
+                        contentDescription = stringResource(R.string.selected_text),
                         tint = Color.White,
                         modifier = Modifier.size(14.dp)
                     )
@@ -682,7 +683,7 @@ fun ProfileImage(
         } else if (!url.isNullOrEmpty()) {
             AsyncImage(
                 model = url,
-                contentDescription = "Profile Image",
+                contentDescription = stringResource(R.string.profile_image),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -699,7 +700,7 @@ fun ProfileImage(
         ) {
             Icon(
                 Icons.Filled.Edit,
-                contentDescription = "Edit Profile",
+                contentDescription = stringResource(R.string.edit_profile),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )

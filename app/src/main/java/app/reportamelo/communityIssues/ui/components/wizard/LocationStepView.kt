@@ -19,6 +19,8 @@ import app.reportamelo.communityIssues.ui.theme.Dimensions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun LocationStepView(
@@ -75,7 +77,7 @@ fun LocationStepView(
         )
 
         Text(
-            text = "Please pan the map to show us where the issue is.",
+            text = stringResource(R.string.please_pan_the_map_to_select_where_the_issue_is),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

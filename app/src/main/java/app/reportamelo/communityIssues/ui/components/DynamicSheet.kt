@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun SheetHeaderView(
@@ -50,7 +52,7 @@ fun SheetHeaderView(
         ) {
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Close"
+                contentDescription = stringResource(R.string.close)
             )
         }
         

@@ -60,7 +60,7 @@ fun BasicInformationView(
     ) {
         InfoBox(
             modifier = Modifier.weight(1f),
-            label = "Issue Type",
+            label = stringResource(R.string.issue_type),
             value = issueTypeLabel
         )
         InfoBox(
@@ -86,7 +86,8 @@ private fun InfoBox(
     val bgColor = if (isDark) {
         MaterialTheme.colorScheme.surfaceVariant
     } else {
-        Color(0xFFF2F2F7)
+//        Color(0xFFFFFF)
+        Color.White.copy(alpha = 0.65f)
     }
 
     Column(

@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun LoadingView(modifier: Modifier = Modifier) {
@@ -23,7 +25,7 @@ fun LoadingView(modifier: Modifier = Modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Loading...")
+            Text(text = stringResource(R.string.loading))
         }
     }
 }

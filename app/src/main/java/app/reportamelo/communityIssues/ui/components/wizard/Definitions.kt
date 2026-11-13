@@ -8,6 +8,8 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import app.reportamelo.communityIssues.ui.theme.LightPrimary
+import androidx.annotation.StringRes
+import app.reportamelo.communityIssues.R
 
 enum class ReportStep(val rawValue: Int, val metadataKey: String) {
     LOCATION(1, "Location"),
@@ -30,30 +32,30 @@ enum class ReportStep(val rawValue: Int, val metadataKey: String) {
 
 data class StepsMetadata(
     val id: String = java.util.UUID.randomUUID().toString(),
-    val title: String,
-    val description: String,
+    @StringRes val title: Int,
+    @StringRes val description: Int,
     val icon: ImageVector
 )
 
 val stepsMetadata = mapOf(
     "Location" to StepsMetadata(
-        title = "Location",
-        description = "Where did it happen?",
+        title = R.string.location,
+        description = R.string.where_did_it_happen,
         icon = Icons.Filled.LocationOn
     ),
     "Attachments" to StepsMetadata(
-        title = "Attachments",
-        description = "Add photos or videos",
+        title = R.string.attachments,
+        description = R.string.add_photos_or_videos,
         icon = Icons.Outlined.AddPhotoAlternate
     ),
     "Details" to StepsMetadata(
-        title = "Details",
-        description = "What happened?",
+        title = R.string.details,
+        description = R.string.what_happened,
         icon = Icons.Outlined.EditNote
     ),
     "Confirmation" to StepsMetadata(
-        title = "Confirmation",
-        description = "We received your report. Thanks!",
+        title = R.string.confirmation,
+        description = R.string.we_received_your_report_thanks,
         icon = Icons.Filled.CheckCircle
     )
 )

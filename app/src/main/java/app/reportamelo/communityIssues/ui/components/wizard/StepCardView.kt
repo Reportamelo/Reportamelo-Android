@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.reportamelo.communityIssues.datamodel.ReportStates
 import app.reportamelo.communityIssues.ui.theme.Dimensions
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun StepCardView(
@@ -83,7 +85,7 @@ fun StepCardView(
                     if (metadata != null) {
                         Icon(
                             imageVector = metadata.icon,
-                            contentDescription = metadata.title,
+                            contentDescription = stringResource(metadata.title),
                             tint = step.color,
                             modifier = Modifier.size(26.dp)
                         )
@@ -91,13 +93,13 @@ fun StepCardView(
 
                     Column {
                         Text(
-                            text = metadata?.title ?: "",
+                            text = metadata?.let { stringResource(it.title) } ?: "",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = metadata?.description ?: "",
+                            text = metadata?.let { stringResource(it.description) } ?: "",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -125,14 +127,14 @@ fun StepCardView(
                 if (metadata != null) {
                     Icon(
                         imageVector = metadata.icon,
-                        contentDescription = metadata.title,
+                        contentDescription = stringResource(metadata.title),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
                         modifier = Modifier.size(24.dp)
                     )
                 }
 
                 Text(
-                    text = metadata?.title ?: "",
+                    text = metadata?.let { stringResource(it.title) } ?: "",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
@@ -143,7 +145,7 @@ fun StepCardView(
                 if (isPast) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = "Completed",
+                        contentDescription = stringResource(R.string.completed),
                         tint = Color(0xFF34C759),
                         modifier = Modifier.size(20.dp)
                     )

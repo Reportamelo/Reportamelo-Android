@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import app.reportamelo.commons.utils.formatRelativeEpochMillis
 import app.reportamelo.communityIssues.R
 import app.reportamelo.models.MapExplorerReport
+import androidx.compose.ui.res.pluralStringResource
 
 @Composable
 fun FollowUpSectionView(
@@ -59,7 +60,7 @@ fun FollowUpSectionView(
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                         append(voteCount.toString())
                     }
-                    append(" citizen have boosted this report to be resolved.")
+                    append(" " + pluralStringResource(R.plurals.citizens_boosted_this_report, voteCount))
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)

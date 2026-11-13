@@ -15,6 +15,8 @@ import app.reportamelo.commons.titleValidator
 import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.ui.components.TextInput
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 private const val DEFAULT_TEXT_INPUT_REGEX = "[a-zA-Z0-9,\\u00C0-\\u00FF ]"
 
@@ -44,7 +46,7 @@ fun DetailsView(
         TextInput(
             value = report.title,
             onValueChange = { model.updateTitle(it) },
-            label = "Title of the issue",
+            label = stringResource(R.string.title_of_the_issue),
             placeholder = titlePlaceholder,
             validators = titleValidator,
             regex = DEFAULT_TEXT_INPUT_REGEX,
@@ -56,7 +58,7 @@ fun DetailsView(
         TextInput(
             value = report.description,
             onValueChange = { model.updateDescription(it) },
-            label = "Please describe the issue",
+            label = stringResource(R.string.please_describe_the_issue),
             placeholder = descriptionPlaceholder,
             validators = descriptionValidator,
             regex = DEFAULT_TEXT_INPUT_REGEX,
@@ -69,8 +71,8 @@ fun DetailsView(
         TextInput(
             value = report.address,
             onValueChange = { model.updateAddress(it) },
-            label = "Please tell us where is the issue",
-            placeholder = "Address",
+            label = stringResource(R.string.please_tell_us_where_is_the_issue_text),
+            placeholder = stringResource(R.string.address_text),
             validators = addressValidator,
             regex = ADDRESS_REGEX,
             onValidChange = { model.setAddressValid(it) },

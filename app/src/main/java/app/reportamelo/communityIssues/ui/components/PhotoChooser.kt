@@ -37,6 +37,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -156,9 +159,9 @@ fun PhotoChooser(
         } catch (e: SecurityException) {
             showCameraSettingsDialog = true
         } catch (e: ActivityNotFoundException) {
-            alertErrorMessage = "No camera application is available on this device."
+            alertErrorMessage = localized(R.string.no_camera_application_is_available_on_this_device, "No camera application is available on this device.")
         } catch (e: Exception) {
-            alertErrorMessage = e.localizedMessage ?: "Unable to open the camera."
+            alertErrorMessage = e.localizedMessage ?: localized(R.string.unable_to_open_the_camera, "Unable to open the camera.")
         }
     }
 
@@ -214,7 +217,7 @@ fun PhotoChooser(
                 model.removeUploadTracker(tracker.id)
             } catch (e: Exception) {
                 tracker.setPhase(previousPhase)
-                alertErrorMessage = e.localizedMessage ?: "Could not delete image"
+                alertErrorMessage = e.localizedMessage ?: localized(R.string.could_not_delete_image, "Could not delete image")
             }
         }
     }
@@ -222,7 +225,7 @@ fun PhotoChooser(
     if (alertErrorMessage != null) {
         AlertDialog(
             onDismissRequest = { alertErrorMessage = null },
-            title = { Text("Alert") },
+            title = { Text(stringResource(R.string.alert)) },
             text = { Text(alertErrorMessage ?: "") },
             confirmButton = {
                 TextButton(onClick = { alertErrorMessage = null }) {
@@ -235,9 +238,9 @@ fun PhotoChooser(
     if (showCameraRationaleDialog) {
         AlertDialog(
             onDismissRequest = { showCameraRationaleDialog = false },
-            title = { Text("Camera Permission Required") },
+            title = { Text(stringResource(R.string.camera_permission_required)) },
             text = {
-                Text("Please allow camera access so you can take photos of the community issue to attach to your report.")
+                Text(stringResource(R.string.please_allow_camera_access_so_you_can_take_photos_of_the_community_iss))
             },
             confirmButton = {
                 TextButton(
@@ -246,12 +249,12 @@ fun PhotoChooser(
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
                 ) {
-                    Text("Try Again")
+                    Text(stringResource(R.string.try_again))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCameraRationaleDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -260,9 +263,9 @@ fun PhotoChooser(
     if (showCameraSettingsDialog) {
         AlertDialog(
             onDismissRequest = { showCameraSettingsDialog = false },
-            title = { Text("Camera Access Disabled") },
+            title = { Text(stringResource(R.string.camera_access_disabled)) },
             text = {
-                Text("Camera permission is disabled. Please enable Camera access in App Settings to take photos.")
+                Text(stringResource(R.string.camera_permission_is_disabled_please_enable_camera_access_in_app_setti))
             },
             confirmButton = {
                 TextButton(
@@ -279,12 +282,12 @@ fun PhotoChooser(
                         }
                     }
                 ) {
-                    Text("Open Settings")
+                    Text(stringResource(R.string.open_settings))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCameraSettingsDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -302,9 +305,10 @@ fun PhotoChooser(
         ) {
             Box(modifier = Modifier.weight(1f)) {
                 ThemedButton(
-                    message = "Take Photo",
+                    message = stringResource(R.string.take_photo),
                     onClick = requestOrLaunchCamera,
                     type = ThemedButtonType.OUTLINE,
+                    style = ThemedButtonStyle.NORMAL,
                     icon = Icons.Default.CameraAlt,
                     isEnabled = !isMaxReached
                 )
@@ -312,13 +316,14 @@ fun PhotoChooser(
 
             Box(modifier = Modifier.weight(1f)) {
                 ThemedButton(
-                    message = "Gallery",
+                    message = stringResource(R.string.gallery),
                     onClick = {
                         photoPickerLauncher.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
                     type = ThemedButtonType.OUTLINE,
+                    style = ThemedButtonStyle.NORMAL,
                     icon = Icons.Filled.PhotoLibrary,
                     isEnabled = !isMaxReached
                 )

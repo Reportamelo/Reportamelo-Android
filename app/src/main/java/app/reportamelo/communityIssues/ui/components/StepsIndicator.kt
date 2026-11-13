@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun StepsIndicator(
@@ -31,7 +33,7 @@ fun StepsIndicator(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Step $currentStep of $numberOfSteps",
+            text = stringResource(R.string.step_lld_of_lld, currentStep, numberOfSteps),
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.fillMaxWidth()

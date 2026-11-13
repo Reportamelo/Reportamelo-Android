@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 data class SearchSuggestion(
     val id: String,
@@ -50,14 +52,14 @@ fun SuggestionsResultList(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "Start typing to search.")
+            Text(text = stringResource(R.string.start_typing_to_search))
         }
     } else if (suggestions.isEmpty()) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "No matches found.")
+            Text(text = stringResource(R.string.no_matches_found))
         }
     } else {
         LazyColumn(modifier = modifier.fillMaxSize()) {

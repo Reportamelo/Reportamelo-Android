@@ -3,6 +3,7 @@ package app.reportamelo.communityIssues.ui.components
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,7 +35,8 @@ fun TextInput(
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else 6,
     focusRequester: FocusRequester? = null,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     val isDark = isSystemInDarkTheme()
     var hasInteracted by remember { mutableStateOf(false) }
@@ -116,6 +118,7 @@ fun TextInput(
             minLines = minLines,
             maxLines = maxLines,
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             shape = RoundedCornerShape(20.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = if (isDark) DarkInputBackground else LightInputBackground,

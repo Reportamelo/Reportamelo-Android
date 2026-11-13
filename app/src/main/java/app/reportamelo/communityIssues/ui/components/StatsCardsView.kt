@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import app.reportamelo.communityIssues.ui.theme.Dimensions
 import app.reportamelo.models.MonthlyInsightsResponse
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun StatsCardsView(
@@ -37,9 +39,9 @@ fun StatsCardsView(
                     .weight(1f)
                     .clip(RoundedCornerShape(Dimensions.ThemeCardCornerRadius))
                     .clickable { onNavigateToReports() },
-                description = "I've reported",
+                description = stringResource(R.string.i_ve_reported),
                 title = insights.totalReports.toString(),
-                trend = "Issues this month",
+                trend = stringResource(R.string.issues_this_month),
                 timeframe = ""
             )
 
@@ -49,10 +51,10 @@ fun StatsCardsView(
                         .weight(1f)
                         .clip(RoundedCornerShape(Dimensions.ThemeCardCornerRadius))
                         .clickable { onNavigateToPetitions() },
-                    description = "I've created",
+                    description = stringResource(R.string.i_ve_created),
                     title = insights.totalPetitions.toString(),
-                    trend = "Petitions this month",
-                    timeframe = "for the last 6 months"
+                    trend = stringResource(R.string.petitions_this_month),
+                    timeframe = stringResource(R.string.for_the_last_6_months)
                 )
             }
         }
@@ -65,10 +67,10 @@ fun StatsCardsView(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(Dimensions.ThemeCardCornerRadius)),
-                description = "I've commented on",
+                description = stringResource(R.string.i_ve_commented_on),
                 title = insights.totalComments.toString(),
-                trend = "Reports",
-                timeframe = "for the last 6 months"
+                trend = stringResource(R.string.reports),
+                timeframe = stringResource(R.string.for_the_last_6_months)
             )
 
             if (enableOther) {
@@ -76,10 +78,10 @@ fun StatsCardsView(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(Dimensions.ThemeCardCornerRadius)),
-                    description = "I've signed on",
+                    description = stringResource(R.string.i_ve_signed_on),
                     title = insights.totalSignatures.toString(),
-                    trend = "Petitions",
-                    timeframe = "for the last 6 months"
+                    trend = stringResource(R.string.petitions),
+                    timeframe = stringResource(R.string.for_the_last_6_months)
                 )
             }
         }

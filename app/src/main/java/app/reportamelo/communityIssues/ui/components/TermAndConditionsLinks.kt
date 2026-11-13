@@ -15,6 +15,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 enum class LinkType {
     TermsAndConditions, Full, Privacy, Policies, EndUserLicenseAgreement
@@ -30,13 +32,21 @@ fun LinksView(
     val context = LocalContext.current
     
     val text = when (type) {
-        LinkType.Full -> "You can review our Terms of Service, Privacy Policy, EULA and Policies."
-        LinkType.TermsAndConditions -> "By continuing, you agree to our Terms of Service and Privacy Policy."
-        LinkType.Privacy -> "If you have doubts about how we use your data, please review our Privacy Policy."
-        LinkType.Policies -> "If you have doubts, please review our Policies."
-        LinkType.EndUserLicenseAgreement -> "If you have doubts, please review our End User License Agreement."
+        LinkType.Full -> stringResource(R.string.links_full)
+        LinkType.TermsAndConditions -> stringResource(R.string.links_terms_and_conditions)
+        LinkType.Privacy -> stringResource(R.string.links_privacy)
+        LinkType.Policies -> stringResource(R.string.links_policies)
+        LinkType.EndUserLicenseAgreement -> stringResource(R.string.links_eula)
     }
     
+    val links = mapOf(
+        stringResource(R.string.link_terms_of_service) to "https://reportamelo.app/legal/terms",
+        stringResource(R.string.link_privacy_policy) to "https://reportamelo.app/legal/privacy",
+        stringResource(R.string.link_eula) to "https://reportamelo.app/legal/eula",
+        stringResource(R.string.link_end_user_license_agreement) to "https://reportamelo.app/legal/eula",
+        stringResource(R.string.link_policies) to "https://reportamelo.app/legal/policies"
+    )
+
     val annotatedString = buildAnnotatedString {
         append(text)
         
@@ -44,14 +54,6 @@ fun LinksView(
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
             textDecoration = TextDecoration.Underline
-        )
-        
-        val links = mapOf(
-            "Terms of Service" to "https://reportamelo.app/legal/terms",
-            "Privacy Policy" to "https://reportamelo.app/legal/privacy",
-            "EULA" to "https://reportamelo.app/legal/eula",
-            "End User License Agreement" to "https://reportamelo.app/legal/eula",
-            "Policies" to "https://reportamelo.app/legal/policies"
         )
         
         links.forEach { (phrase, url) ->

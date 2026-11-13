@@ -16,9 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.reportamelo.communityIssues.controllers.ImagePhase
@@ -29,6 +32,11 @@ import app.reportamelo.communityIssues.datamodel.ReportStates
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+
+// Clearance for TabBarView's FloatingBottomBar
+private val TabBarClearance = 84.dp
 
 @Composable
 fun ReportWizardContainer(
@@ -75,6 +83,15 @@ fun ReportWizardContainer(
     }
 
     val stepYOffsets = remember { mutableStateMapOf<ReportStep, Int>() }
+
+    // Mirrors iOS safeAreaInset(edge: .bottom): the footer rides on top of the keyboard and the
+    // scroll viewport ends at the footer, so the focused input is brought into view above both
+    val density = LocalDensity.current
+    val imeBottom = with(density) { WindowInsets.ime.getBottom(density).toDp() }
+    val restingFooterInset =
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + TabBarClearance
+    val isKeyboardRaised = imeBottom > restingFooterInset
+    var footerHeight by remember { mutableStateOf(0.dp) }
     var isMapTouchActive by remember { mutableStateOf(false) }
 
     LaunchedEffect(reportToModify) {
@@ -92,7 +109,7 @@ fun ReportWizardContainer(
     if (presentAlert) {
         AlertDialog(
             onDismissRequest = { controller.dismissAlert() },
-            title = { Text("Status Update") },
+            title = { Text(stringResource(R.string.status_update)) },
             text = { Text(alertMessage) },
             confirmButton = {
                 TextButton(onClick = { controller.dismissAlert() }) {
@@ -103,7 +120,7 @@ fun ReportWizardContainer(
     }
 
     val gradientColor by animateColorAsState(
-        targetValue = currentStep.color.copy(alpha = 0.14f),
+        targetValue = currentStep.color.copy(alpha = 0.07f),
         label = "stepGlowColor"
     )
 
@@ -128,6 +145,7 @@ fun ReportWizardContainer(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .padding(bottom = if (isKeyboardRaised) footerHeight else 0.dp)
         ) {
             // Top bar matching iOS navigation header (Back button on left, centered title + Step X of 4)
             Box(
@@ -156,7 +174,7 @@ fun ReportWizardContainer(
                                 } else {
                                     Icons.AutoMirrored.Filled.KeyboardArrowLeft
                                 },
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -175,7 +193,7 @@ fun ReportWizardContainer(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "Step ${currentStep.rawValue} of 4",
+                        text = stringResource(R.string.step_lld_of_4, currentStep.rawValue),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -190,7 +208,7 @@ fun ReportWizardContainer(
                     .fillMaxWidth()
                     .verticalScroll(scrollState, enabled = !isMapTouchActive)
                     .padding(horizontal = 20.dp, vertical = 10.dp)
-                    .padding(bottom = 180.dp),
+                    .padding(bottom = if (isKeyboardRaised) 12.dp else 180.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 steps.forEachIndexed { index, step ->
@@ -247,7 +265,10 @@ fun ReportWizardContainer(
 
         // Bottom Wizard Footer positioned cleanly above the FloatingBottomBar
         WizardFooter(
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .onSizeChanged { footerHeight = with(density) { it.height.toDp() } },
+            bottomInset = maxOf(imeBottom, restingFooterInset),
             currentStep = currentStep,
             buttonMessage = controller.getButtonMessage(),
             disableButton = disableButton,
@@ -276,6 +297,7 @@ fun ReportWizardContainer(
 @Composable
 fun WizardFooter(
     modifier: Modifier = Modifier,
+    bottomInset: Dp,
     currentStep: ReportStep,
     buttonMessage: String,
     disableButton: Boolean,
@@ -295,8 +317,7 @@ fun WizardFooter(
                     )
                 )
             )
-            .navigationBarsPadding()
-            .padding(bottom = 84.dp) // Clearance for TabBarView's FloatingBottomBar
+            .padding(bottom = bottomInset)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         if (currentStep.rawValue < ReportStep.CONFIRMATION.rawValue) {
@@ -309,7 +330,7 @@ fun WizardFooter(
             )
         } else {
             ThemedButton(
-                message = "Done",
+                message = stringResource(R.string.done),
                 onClick = onDone,
                 type = ThemedButtonType.SECONDARY
             )

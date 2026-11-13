@@ -18,6 +18,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +37,7 @@ fun WebBrowserView(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(Uri.parse(initialUrl).host ?: "Website") },
+                title = { Text(Uri.parse(initialUrl).host ?: stringResource(R.string.website)) },
                 navigationIcon = {
                     IconButton(onClick = { 
                         if (webView?.canGoBack() == true) {
@@ -43,12 +46,12 @@ fun WebBrowserView(
                             onDismiss()
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 }
             )
@@ -61,20 +64,20 @@ fun WebBrowserView(
                             type = "text/plain"
                             putExtra(Intent.EXTRA_TEXT, webView?.url ?: initialUrl)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+                        context.startActivity(Intent.createChooser(shareIntent, localized(R.string.share_via, "Share via")))
                     }) {
-                        Icon(Icons.Filled.Share, contentDescription = "Share")
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.share))
                     }
                     Spacer(Modifier.weight(1f))
                     IconButton(onClick = { webView?.reload() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Reload")
+                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.reload))
                     }
                     Spacer(Modifier.weight(1f))
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webView?.url ?: initialUrl))
                         context.startActivity(intent)
                     }) {
-                        Icon(Icons.Filled.OpenInBrowser, contentDescription = "Open in Browser")
+                        Icon(Icons.Filled.OpenInBrowser, contentDescription = stringResource(R.string.open_in_browser))
                     }
                 }
             )

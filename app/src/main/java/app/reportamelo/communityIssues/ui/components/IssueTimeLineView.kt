@@ -55,6 +55,8 @@ import app.reportamelo.models.IssueUpdate
 import app.reportamelo.models.Milestone
 import app.reportamelo.models.Resolution
 import app.reportamelo.repository.ReportRepository
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBackground
+import app.reportamelo.communityIssues.helpers.localized
 
 private val TimelineOrange = Color(0xFFF57C00)
 private val FinalEvidencePurple = Color(0xFF7C1DFF)
@@ -108,11 +110,11 @@ fun IssueTimeLineView(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                            .toolbarButtonBackground()
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             modifier = Modifier.size(26.dp)
                         )
                     }
@@ -126,7 +128,7 @@ fun IssueTimeLineView(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                            .toolbarButtonBackground()
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -274,7 +276,7 @@ fun IssueTimeLineView(
     }
 }
 
-private fun contextTitleForInProgress(): String = "In Progress"
+private fun contextTitleForInProgress(): String = localized(R.string.in_progress, "In Progress")
 
 @Composable
 private fun TimelineMilestoneSection(

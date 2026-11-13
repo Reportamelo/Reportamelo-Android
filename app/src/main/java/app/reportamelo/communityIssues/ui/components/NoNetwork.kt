@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun NoNetwork(
@@ -55,19 +57,19 @@ fun NoNetwork(
         ) {
             Icon(
                 imageVector = Icons.Filled.WifiOff,
-                contentDescription = "Network Unavailable",
+                contentDescription = stringResource(R.string.network_unavailable),
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Network Unavailable",
+                text = stringResource(R.string.network_unavailable),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Please check your internet connection and try again.",
+                text = stringResource(R.string.please_check_your_internet_connection_and_try_again),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
@@ -78,7 +80,7 @@ fun NoNetwork(
                     onRetry()
                 }
             }) {
-                Text("Retry")
+                Text(stringResource(R.string.retry))
             }
         }
     }

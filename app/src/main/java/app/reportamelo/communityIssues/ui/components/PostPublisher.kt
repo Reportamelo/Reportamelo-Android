@@ -16,12 +16,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import app.reportamelo.models.PetitionPost
 import app.reportamelo.models.User
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun AvatarView(user: User, modifier: Modifier = Modifier) {
     AsyncImage(
         model = user.profilePicture,
-        contentDescription = "Avatar",
+        contentDescription = stringResource(R.string.avatar),
         contentScale = ContentScale.Crop,
         modifier = modifier
             .size(48.dp)
@@ -67,7 +69,7 @@ fun PostPublisher(petition: PetitionPost) {
                 )
             }
             
-            val publishedInfo = "${"Just now"} - ${petition.postMetadata.city}, ${petition.postMetadata.countryCode}"
+            val publishedInfo = "${stringResource(R.string.just_now)} - ${petition.postMetadata.city}, ${petition.postMetadata.countryCode}"
             Text(
                 text = publishedInfo,
                 style = MaterialTheme.typography.bodySmall,

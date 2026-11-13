@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun ColorGrid(
@@ -76,7 +78,7 @@ fun ColorGrid(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Check,
-                            contentDescription = "Selected",
+                            contentDescription = stringResource(R.string.selected_text),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )

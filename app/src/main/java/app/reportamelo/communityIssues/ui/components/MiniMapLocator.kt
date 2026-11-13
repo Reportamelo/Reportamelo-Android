@@ -7,6 +7,7 @@ import android.location.Location
 import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,12 +32,15 @@ import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.models.Coordinate
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalComposeUiApi::class)
 @SuppressLint("MissingPermission")
@@ -201,7 +205,8 @@ fun MiniMapLocator(
                     false
                 }
         ) {
-            val mapStyleOptions = rememberMapStyleOptions()
+            val isDarkTheme = isSystemInDarkTheme()
+            val mapStyleOptions = rememberMapStyleOptions(isDarkTheme = isDarkTheme)
             val mapProperties = remember(mapStyleOptions) {
                 MapProperties(mapStyleOptions = mapStyleOptions)
             }
@@ -209,6 +214,12 @@ fun MiniMapLocator(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                // Match the dark style's base color so the map doesn't flash white before tiles load
+                googleMapOptionsFactory = {
+                    GoogleMapOptions().apply {
+                        if (isDarkTheme) backgroundColor(0xFF242F3E.toInt())
+                    }
+                },
                 properties = mapProperties,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
@@ -225,7 +236,7 @@ fun MiniMapLocator(
         // Centered "+" icon matching iOS MiniMapLocator
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Center",
+            contentDescription = stringResource(R.string.center),
             modifier = Modifier
                 .align(Alignment.Center)
                 .size(40.dp),
@@ -271,7 +282,7 @@ fun MiniMapLocator(
                 ) {
                     Icon(
                         imageVector = Icons.Default.NearMe,
-                        contentDescription = "Current Location",
+                        contentDescription = stringResource(R.string.current_location),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
@@ -293,7 +304,7 @@ fun MiniMapLocator(
                 ) {
                     Icon(
                         imageVector = Icons.Default.OpenInFull,
-                        contentDescription = "Expand Map",
+                        contentDescription = stringResource(R.string.expand_map),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurface
                     )

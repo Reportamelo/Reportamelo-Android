@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.reportamelo.models.DaySummary
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -27,6 +28,8 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 fun isDateWithinInsightsRange(date: LocalDate, now: LocalDate = LocalDate.now()): Boolean {
     val minMonth = YearMonth.of(2026, 1)
@@ -124,7 +127,7 @@ fun CustomCalendar(
             },
             dismissButton = {
                 TextButton(onClick = { showDateInputModal = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         ) {
@@ -152,7 +155,8 @@ fun CustomCalendar(
                     .padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val monthName = currentMonth.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+                val monthName = currentMonth.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.getDefault())
+                    .replaceFirstChar { it.titlecase(Locale.getDefault()) }
                 Text(
                     text = "$monthName ${currentMonth.year}",
                     fontSize = 20.sp,
@@ -162,7 +166,7 @@ fun CustomCalendar(
                 Spacer(modifier = Modifier.width(2.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Select date",
+                    contentDescription = stringResource(R.string.select_date),
                     tint = orangeColor,
                     modifier = Modifier.size(22.dp)
                 )
@@ -174,7 +178,7 @@ fun CustomCalendar(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Previous month",
+                    contentDescription = stringResource(R.string.previous_month),
                     tint = if (canGoBack) orangeColor else orangeColor.copy(alpha = 0.3f),
                     modifier = Modifier
                         .size(28.dp)
@@ -187,7 +191,7 @@ fun CustomCalendar(
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Next month",
+                    contentDescription = stringResource(R.string.next_month),
                     tint = if (canGoForward) orangeColor else orangeColor.copy(alpha = 0.3f),
                     modifier = Modifier
                         .size(28.dp)
@@ -210,7 +214,12 @@ fun CustomCalendar(
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT").forEach { dayLabel ->
+            listOf(
+                DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+                DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY
+            ).map {
+                it.getDisplayName(TextStyle.SHORT_STANDALONE, Locale.getDefault()).take(3).uppercase(Locale.getDefault())
+            }.forEach { dayLabel ->
                 Text(
                     text = dayLabel,
                     modifier = Modifier.weight(1f),

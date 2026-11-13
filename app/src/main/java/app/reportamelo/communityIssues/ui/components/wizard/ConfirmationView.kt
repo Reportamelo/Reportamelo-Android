@@ -30,6 +30,9 @@ import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.theme.Dimensions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 @Composable
 fun ConfirmationView(
@@ -58,34 +61,34 @@ fun ConfirmationView(
         ) {
             Icon(
                 imageVector = Icons.Filled.Verified,
-                contentDescription = "Submitted",
+                contentDescription = stringResource(R.string.submitted),
                 tint = Color(0xFF34C759),
                 modifier = Modifier.size(64.dp)
             )
 
             Text(
-                text = "Your report has been submitted",
+                text = stringResource(R.string.your_report_has_been_submitted),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = "Please wait for the report to be reviewed.\nWe will notify you in each step of the process.",
+                text = stringResource(R.string.please_wait_for_the_report_to_be_reviewed_we_will_notify_you_in_each_s),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = "Response time can vary depending on the institution, severity and type of the report.",
+                text = stringResource(R.string.response_time_can_vary_depending_on_the_institution_severity_and_type_of_the_report),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = "Meanwhile, you can copy report code or share it with others.",
+                text = stringResource(R.string.meanwhile_you_can_copy_report_code_or_share_it_with_others),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -121,7 +124,7 @@ fun ConfirmationView(
             ) {
                 Box(modifier = Modifier.weight(1f)) {
                     ThemedButton(
-                        message = if (showCopiedCodeMicroInteraction) "Copied!" else "Copy report code",
+                        message = if (showCopiedCodeMicroInteraction) stringResource(R.string.copied) else stringResource(R.string.copy_report_code),
                         icon = if (showCopiedCodeMicroInteraction) Icons.Filled.CheckCircle else Icons.Filled.ContentCopy,
                         type = ThemedButtonType.OUTLINE,
                         onClick = {
@@ -137,7 +140,7 @@ fun ConfirmationView(
 
                 Box(modifier = Modifier.weight(1f)) {
                     ThemedButton(
-                        message = "Share Report",
+                        message = stringResource(R.string.share_report),
                         icon = Icons.Filled.Share,
                         type = ThemedButtonType.OUTLINE,
                         onClick = {
@@ -145,7 +148,7 @@ fun ConfirmationView(
                                 putExtra(Intent.EXTRA_TEXT, resolvedShareUrl)
                                 type = "text/plain"
                             }
-                            val shareIntent = Intent.createChooser(sendIntent, "Share Report")
+                            val shareIntent = Intent.createChooser(sendIntent, localized(R.string.share_report, "Share Report"))
                             context.startActivity(shareIntent)
                         }
                     )

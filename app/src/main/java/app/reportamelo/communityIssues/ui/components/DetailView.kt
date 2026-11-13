@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.reportamelo.commons.CommentForType
 import app.reportamelo.commons.IssueStatus
@@ -37,14 +38,23 @@ import app.reportamelo.commons.utils.buildShareURL
 import app.reportamelo.communityIssues.controllers.DetailReportOptions
 import app.reportamelo.communityIssues.controllers.DetailSubScreen
 import app.reportamelo.communityIssues.controllers.DetailViewModel
+import app.reportamelo.communityIssues.stubs.MapExplorerMockedData
 import app.reportamelo.communityIssues.ui.screens.animations.CustomBottomToolbar
+import app.reportamelo.communityIssues.ui.screens.animations.skeleton
 import app.reportamelo.communityIssues.ui.screens.modals.EvidencesScreen
 import app.reportamelo.communityIssues.ui.screens.tabs.CitizenProfile
 import app.reportamelo.communityIssues.ui.screens.tabs.CommentsSectionView
+import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBackground
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBorder
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonColor
 import app.reportamelo.models.MapExplorerReport
 import app.reportamelo.services.AdMobManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 private const val DEFAULT_TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256094549412/5224354917"
 
@@ -154,11 +164,11 @@ fun DetailView(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .toolbarButtonBackground()
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.close),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -166,7 +176,8 @@ fun DetailView(
                 if (canShare || !state.isOwnProfile) {
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        color = toolbarButtonColor(),
+                        border = toolbarButtonBorder()
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -189,7 +200,7 @@ fun DetailView(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Share,
-                                        contentDescription = "Share",
+                                        contentDescription = stringResource(R.string.share),
                                         tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -200,7 +211,7 @@ fun DetailView(
                                     IconButton(onClick = { showMoreMenu = true }) {
                                         Icon(
                                             imageVector = Icons.Filled.MoreHoriz,
-                                            contentDescription = "More options",
+                                            contentDescription = stringResource(R.string.more_options),
                                             tint = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
@@ -211,7 +222,7 @@ fun DetailView(
                                         shape = RoundedCornerShape(16.dp)
                                     ) {
                                         DropdownMenuItem(
-                                            text = { Text("Copy Report ID") },
+                                            text = { Text(stringResource(R.string.copy_report_id)) },
                                             leadingIcon = {
                                                 Icon(
                                                     imageVector = Icons.Filled.ContentCopy,
@@ -228,7 +239,7 @@ fun DetailView(
                                         )
 
                                         DropdownMenuItem(
-                                            text = { Text("Open in Google Maps") },
+                                            text = { Text(stringResource(R.string.open_in_google_maps)) },
                                             leadingIcon = {
                                                 Icon(
                                                     imageVector = Icons.Filled.Place,
@@ -248,7 +259,7 @@ fun DetailView(
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
-                                                    text = "Report content",
+                                                    text = stringResource(R.string.report_content),
                                                     color = if (state.isGuest) {
                                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                                     } else {
@@ -284,7 +295,7 @@ fun DetailView(
                                         shape = RoundedCornerShape(16.dp)
                                     ) {
                                         Text(
-                                            text = "Content options",
+                                            text = stringResource(R.string.content_options),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = Color.Gray,
                                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -347,14 +358,14 @@ fun DetailView(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Latest Comments",
+                        text = stringResource(R.string.latest_comments),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
 
                     if (state.latestComments.isEmpty()) {
                         Text(
-                            text = "No comments yet. Tap Comment below to share how this issue affects you.",
+                            text = stringResource(R.string.no_comments_yet_tap_comment_below_to_share_how_this_issue_affects_you),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
@@ -409,7 +420,7 @@ fun DetailView(
                         }
                     } else {
                         viewModel.showBoostMessage(
-                            "No ad is available to show right now. Please try again later."
+                            localized(R.string.no_ad_is_available_to_show_right_now_please_try_again_later_text, "No ad is available to show right now. Please try again later.")
                         )
                     }
                 }
@@ -424,15 +435,15 @@ fun DetailView(
     if (state.showConfirmReportAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissConfirmReportAlert() },
-            title = { Text("Confirm content reporting") },
+            title = { Text(stringResource(R.string.confirm_content_reporting)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("I confirm that this report violates our community guidelines.")
+                    Text(stringResource(R.string.i_confirm_that_this_report_violates_our_community_guidelines))
                     if (state.selectedReportOption == DetailReportOptions.OTHER.description) {
                         OutlinedTextField(
                             value = state.customReason,
                             onValueChange = { viewModel.updateCustomReason(it) },
-                            placeholder = { Text("Type your reason") },
+                            placeholder = { Text(stringResource(R.string.type_your_reason)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -441,12 +452,12 @@ fun DetailView(
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.reportContentViolation(report) }) {
-                    Text("Report", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.report), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissConfirmReportAlert() }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -456,11 +467,11 @@ fun DetailView(
     if (state.showBoostAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissBoostAlert() },
-            title = { Text("Boosting report to give more importance to it") },
+            title = { Text(stringResource(R.string.boosting_report_to_give_more_importance_to_it)) },
             text = { Text(state.message) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissBoostAlert() }) {
-                    Text("Close")
+                    Text(stringResource(R.string.close))
                 }
             }
         )
@@ -470,7 +481,7 @@ fun DetailView(
     if (state.showSuccessfulAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissSuccessfulAlert() },
-            title = { Text("Moderation report sent") },
+            title = { Text(stringResource(R.string.moderation_report_sent)) },
             text = { Text(state.message) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissSuccessfulAlert() }) {
@@ -484,7 +495,7 @@ fun DetailView(
     if (state.showErrorAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissErrorAlert() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.error)) },
             text = { Text(state.errorMessage) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissErrorAlert() }) {
@@ -513,3 +524,37 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is ContextWrapper -> baseContext.findActivity()
     else -> null
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+fun DetailViewPreview(
+    modifier: Modifier = Modifier
+) {
+    var isPresented by remember { mutableStateOf(true) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    CommunityIssueReporterTheme {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Button(onClick = { isPresented = !isPresented }) {
+                Text(stringResource(R.string.open))
+            }
+
+            if (isPresented) {
+                ModalBottomSheet(
+                    onDismissRequest = { isPresented = false }
+                ) {
+                    DetailView(
+                        modifier = Modifier.skeleton(isRedacted = isLoading),
+                        report = MapExplorerMockedData.shared.report,
+                        onDismiss = { isPresented = false }
+                    )
+                }
+            }
+        }
+    }
+}
+

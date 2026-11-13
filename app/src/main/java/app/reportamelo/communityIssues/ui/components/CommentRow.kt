@@ -28,13 +28,16 @@ import app.reportamelo.repository.UserRepository
 import coil.compose.SubcomposeAsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import androidx.annotation.StringRes
 
-enum class CommentViolationReportOptions(val id: String, val title: String) {
-    HARASSMENT("harassment", "Harassment or bullying"),
-    SELF_PROMOTION("selfPromotion", "Unwanted self-promotion"),
-    HATE_SPEECH("hateSpeech", "Hate speech or discrimination"),
-    VIOLENCE("violence", "Threats or violence"),
-    OTHER("other", "Other issue")
+enum class CommentViolationReportOptions(val id: String, val title: String, @StringRes val titleRes: Int) {
+    HARASSMENT("harassment", "Harassment or bullying", R.string.harassment_or_bullying),
+    SELF_PROMOTION("selfPromotion", "Unwanted self-promotion", R.string.unwanted_self_promotion),
+    HATE_SPEECH("hateSpeech", "Hate speech or discrimination", R.string.hate_speech_or_discrimination),
+    VIOLENCE("violence", "Threats or violence", R.string.threats_or_violence),
+    OTHER("other", "Other issue", R.string.other_issue)
 }
 
 private val SecondaryLabelColor = Color(0xFF8E8E93)
@@ -85,7 +88,7 @@ fun CommentRow(
             if (resolvedAvatarUrl != null) {
                 SubcomposeAsyncImage(
                     model = resolvedAvatarUrl,
-                    contentDescription = "Profile Picture",
+                    contentDescription = stringResource(R.string.profile_picture),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(36.dp)
@@ -151,7 +154,7 @@ fun CommentRow(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.MoreHoriz,
-                            contentDescription = "Comment report options",
+                            contentDescription = stringResource(R.string.comment_report_options),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -161,14 +164,14 @@ fun CommentRow(
                         onDismissRequest = { showMenu = false }
                     ) {
                         Text(
-                            text = "Comment report options",
+                            text = stringResource(R.string.comment_report_options),
                             style = MaterialTheme.typography.labelSmall,
                             color = SecondaryLabelColor,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                         CommentViolationReportOptions.entries.forEachIndexed { index, option ->
                             DropdownMenuItem(
-                                text = { Text(option.title) },
+                                text = { Text(stringResource(option.titleRes)) },
                                 onClick = {
                                     selectedOption = option.title
                                     showMenu = false
@@ -197,8 +200,8 @@ fun CommentRow(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Confirm content blocking") },
-            text = { Text("I confirm that this content violates our community guidelines.") },
+            title = { Text(stringResource(R.string.confirm_content_blocking)) },
+            text = { Text(stringResource(R.string.i_confirm_that_this_content_violates_our_community_guidelines)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -208,12 +211,12 @@ fun CommentRow(
                         }
                     }
                 ) {
-                    Text("Block", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.block), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

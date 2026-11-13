@@ -52,6 +52,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 private const val SEARCH_TRANSITION_DURATION_MS = 300
 
@@ -59,7 +61,7 @@ private const val SEARCH_TRANSITION_DURATION_MS = 300
 fun CustomTabBar(
     modifier: Modifier = Modifier,
     items: List<String>,
-    searchHint: String = "Cities, Reports or petitions",
+    searchHint: String = stringResource(R.string.cities_reports_or_petitions),
     selection: String,
     onSelectionChange: (String) -> Unit,
     searchText: String,
@@ -176,7 +178,7 @@ fun CustomTabBar(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.NearMe,
-                                contentDescription = "Location",
+                                contentDescription = stringResource(R.string.location),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -229,7 +231,7 @@ fun CustomTabBar(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
+                                contentDescription = stringResource(R.string.search),
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -302,7 +304,7 @@ fun CustomTabBar(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Clear",
+                                contentDescription = stringResource(R.string.clear),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -341,7 +343,7 @@ fun CustomTabBar(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.GridView,
-                                    contentDescription = "Minimize",
+                                    contentDescription = stringResource(R.string.minimize),
                                     modifier = Modifier.size(22.dp)
                                 )
                             }

@@ -1,6 +1,7 @@
 package app.reportamelo.communityIssues.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,13 +26,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun GooglePillButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
     enabled: Boolean = true,
-    text: String = "Inicia sesión con Google"
+    text: String = stringResource(R.string.sign_in_with_google)
 ) {
     Button(
         onClick = onClick,
@@ -48,11 +52,10 @@ fun GooglePillButton(
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Icon(
-            imageVector = Icons.Filled.AccountCircle,
-            contentDescription = "Google Logo",
-            modifier = Modifier.size(20.dp),
-            tint = Color.Unspecified
+        Image(
+            painter = painterResource(id = R.drawable.google),
+            contentDescription = stringResource(R.string.google_logo),
+            modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(

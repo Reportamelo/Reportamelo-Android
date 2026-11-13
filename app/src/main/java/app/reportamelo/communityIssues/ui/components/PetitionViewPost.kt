@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.reportamelo.models.PetitionPost
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun PetitionViewPost(
@@ -27,7 +29,7 @@ fun PetitionViewPost(
         ) {
             Column {
                 Text(
-                    text = "Category",
+                    text = stringResource(R.string.category),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                 )
@@ -39,7 +41,7 @@ fun PetitionViewPost(
             }
             Column {
                 Text(
-                    text = "Status",
+                    text = stringResource(R.string.status),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                 )

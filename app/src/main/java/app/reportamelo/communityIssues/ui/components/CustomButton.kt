@@ -11,12 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -119,49 +120,72 @@ fun ThemedButton(
         shape = CircleShape,
         contentPadding = PaddingValues(0.dp)
     ) {
-        if (isLoading) {
-            ShimmerEffect(modifier = Modifier.fillMaxSize())
-        } else {
+        // Mirrors iOS: the shimmer runs behind the label, so the text stays visible while loading
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                ShimmerEffect(
+                    modifier = Modifier.fillMaxSize(),
+                    shimmerColor = if (type == ThemedButtonType.OUTLINE) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    } else {
+                        Color.White.copy(alpha = 0.35f)
+                    }
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier.padding(horizontal = 12.dp)
             ) {
-                if (icon != null) {
+                if (icon != null && !isLoading) {
                     Icon(icon, contentDescription = null)
                 }
-                Text(text = message, style = textStyle)
+                Text(
+                    text = message,
+                    style = textStyle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
 }
 
 @Composable
-fun ShimmerEffect(modifier: Modifier = Modifier) {
+fun ShimmerEffect(
+    modifier: Modifier = Modifier,
+    shimmerColor: Color = Color.White.copy(alpha = 0.35f)
+) {
     val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim by transition.animateFloat(
+    val phase by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 1000f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "shimmer_translate"
-    )
-
-    val brush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.1f),
-            Color.White.copy(alpha = 0.4f),
-            Color.White.copy(alpha = 0.1f),
-        ),
-        start = Offset.Zero,
-        end = Offset(x = translateAnim, y = translateAnim)
+        label = "shimmer_phase"
     )
 
     Box(
         modifier = modifier
             .clip(CircleShape)
-            .background(brush)
+            .drawBehind {
+                // A band 1.5x the button width sweeping from leading to trailing
+                val bandWidth = size.width * 1.5f
+                val startX = -size.width * 0.75f + bandWidth * phase
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        0.3f to Color.Transparent,
+                        0.5f to shimmerColor,
+                        0.7f to Color.Transparent,
+                        startX = startX,
+                        endX = startX + bandWidth
+                    )
+                )
+            }
     )
 }

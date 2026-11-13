@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 data class SignatureLine(
     val id: UUID = UUID.randomUUID(),
@@ -42,15 +44,15 @@ fun DrawSignature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Draw Signature") },
+                title = { Text(stringResource(R.string.draw_signature)) },
                 navigationIcon = {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 },
                 actions = {
                     TextButton(onClick = onSave) {
-                        Text("Save")
+                        Text(stringResource(R.string.save))
                     }
                 }
             )
@@ -58,13 +60,13 @@ fun DrawSignature(
         bottomBar = {
             BottomAppBar {
                 IconButton(onClick = {}) {
-                    Icon(Icons.Default.Create, contentDescription = "Draw")
+                    Icon(Icons.Default.Create, contentDescription = stringResource(R.string.draw))
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = onClear) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Clear signature")
+                    Text(stringResource(R.string.clear_signature))
                 }
             }
         }

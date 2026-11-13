@@ -189,8 +189,8 @@ fun PhotoPreview(
     height: Int = 170,
     isFullMode: Boolean = false,
     state: AttachmentState = AttachmentState.CONFIRMED,
-    uploaderName: String = "User",
-    date: String = "Today",
+    uploaderName: String = stringResource(R.string.user),
+    date: String = stringResource(R.string.today),
     showOptionsButton: Boolean = true,
     onOptionsClick: () -> Unit = {}
 ) {
@@ -213,7 +213,7 @@ fun PhotoPreview(
     ) {
         AsyncImage(
             model = url,
-            contentDescription = "Photo Preview",
+            contentDescription = stringResource(R.string.photo_preview),
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
@@ -306,7 +306,7 @@ fun PhotoPreview(
             ) {
                 Icon(
                     imageVector = Icons.Filled.MoreHoriz,
-                    contentDescription = "Options",
+                    contentDescription = stringResource(R.string.options),
                     tint = Color.Black,
                     modifier = Modifier.size(18.dp)
                 )

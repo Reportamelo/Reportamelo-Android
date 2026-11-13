@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.reportamelo.communityIssues.controllers.ImagePhase
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun PreviewImageToUpload(
@@ -43,8 +45,8 @@ fun PreviewImageToUpload(
     if (showDeleteAlert) {
         AlertDialog(
             onDismissRequest = { showDeleteAlert = false },
-            title = { Text("Delete") },
-            text = { Text("Do you want to delete this image?") },
+            title = { Text(stringResource(R.string.delete)) },
+            text = { Text(stringResource(R.string.do_you_want_to_delete_this_image)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -52,12 +54,12 @@ fun PreviewImageToUpload(
                         onDelete(name)
                     }
                 ) {
-                    Text("Yes", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.yes), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteAlert = false }) {
-                    Text("No")
+                    Text(stringResource(R.string.no))
                 }
             }
         )
@@ -142,7 +144,7 @@ fun PreviewImageToUpload(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.delete),
                     tint = Color(0xFFFF3B30),
                     modifier = Modifier.size(20.dp)
                 )
@@ -157,7 +159,7 @@ fun PreviewImageToUpload(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Refresh,
-                    contentDescription = "Retry",
+                    contentDescription = stringResource(R.string.retry),
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )

@@ -14,6 +14,8 @@ import app.reportamelo.communityIssues.ui.theme.Dimensions
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun PostInteractions(
@@ -33,7 +35,7 @@ fun PostInteractions(
                 contentColor = if (hasCurrentUserSigned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         ) {
-            Icon(imageVector = Icons.Default.Create, contentDescription = "Sign")
+            Icon(imageVector = Icons.Default.Create, contentDescription = stringResource(R.string.sign))
         }
         
         TextButton(
@@ -44,7 +46,7 @@ fun PostInteractions(
                 .clip(RoundedCornerShape(Dimensions.ThemeRadius)),
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
-            Icon(imageVector = Icons.Outlined.ChatBubbleOutline, contentDescription = "Comment")
+            Icon(imageVector = Icons.Outlined.ChatBubbleOutline, contentDescription = stringResource(R.string.comment))
         }
         
         TextButton(
@@ -55,7 +57,7 @@ fun PostInteractions(
                 .clip(RoundedCornerShape(Dimensions.ThemeRadius)),
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
         ) {
-            Icon(imageVector = Icons.Filled.Share, contentDescription = "Share")
+            Icon(imageVector = Icons.Filled.Share, contentDescription = stringResource(R.string.share))
         }
     }
 }
