@@ -540,11 +540,71 @@ class AuthAndOnboardingViewModelsTest {
 
         viewModel.dismissDeleteAlert()
         assertFalse(viewModel.showDeleteAlert.value)
-        viewModel.deleteAccount()
+        var onDeletedCalled = false
+        viewModel.deleteAccount(onDeleted = { onDeletedCalled = true })
         testScheduler.advanceUntilIdle()
 
         assertTrue(accountDeleted)
+        assertTrue(onDeletedCalled)
         assertFalse(viewModel.isDeletingAccount.value)
+    }
+
+    @Test
+    fun `SettingsSubViewModel updateLanguage applies only supported languages that differ from the current one`() {
+        val appliedLanguages = mutableListOf<String>()
+        val viewModel = SettingsSubViewModel(
+            currentLanguageProvider = { "en" },
+            setLanguageProvider = { appliedLanguages.add(it) }
+        )
+
+        assertEquals("en", viewModel.selectedLanguage.value)
+        assertEquals(listOf("", "en", "es-419"), viewModel.supportedLanguages)
+
+        assertFalse(viewModel.updateLanguage("en"))
+        assertFalse(viewModel.updateLanguage("fr"))
+        assertTrue(viewModel.updateLanguage("es-419"))
+        assertEquals("es-419", viewModel.selectedLanguage.value)
+
+        assertTrue(viewModel.updateLanguage(""))
+        assertEquals(listOf("es-419", ""), appliedLanguages)
+    }
+
+    @Test
+    fun `SettingsSubViewModel deleteAccount reports failure without calling onDeleted`() = runTest {
+        var onDeletedCalled = false
+        var onFailedCalled = false
+
+        val viewModel = SettingsSubViewModel(
+            deleteAccountProvider = { throw IllegalStateException("boom") }
+        )
+        viewModel.deleteAccount(
+            onDeleted = { onDeletedCalled = true },
+            onFailed = { onFailedCalled = true }
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(onDeletedCalled)
+        assertTrue(onFailedCalled)
+        assertFalse(viewModel.isDeletingAccount.value)
+    }
+
+    @Test
+    fun `SubscriptionManager mocked subscription drives the delete account interceptor alert`() {
+        val subscriptionManager = app.reportamelo.services.SubscriptionManager
+        try {
+            subscriptionManager.setMockIsPro(true)
+            assertTrue(subscriptionManager.isPro.value)
+
+            val viewModel = SettingsSubViewModel()
+            viewModel.handleDeleteRequest(isPro = subscriptionManager.isPro.value)
+            assertTrue(viewModel.showActiveSubscriptionAlert.value)
+            assertFalse(viewModel.showDeleteAlert.value)
+
+            subscriptionManager.setMockIsPro(false)
+            assertFalse(subscriptionManager.isPro.value)
+        } finally {
+            subscriptionManager.setMockIsPro(null)
+        }
     }
 
     @Test
