@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
 
 data class ProfileLink(val profileId: String)
 
@@ -131,11 +132,11 @@ class DeepLinkRouter private constructor() {
                 val result = MapExplorerRepository.report(reportId, "SV", "")
                 report.value = result
             } catch (e: CommonIntercommunicationErrors.InvalidPetition) {
-                dismissAndShowAlert("That link is invalid")
+                dismissAndShowAlert(localized(R.string.that_link_is_invalid, "That link is invalid"))
             } catch (e: CommonIntercommunicationErrors.NotFound) {
-                dismissAndShowAlert("That link does not exist")
+                dismissAndShowAlert(localized(R.string.that_link_does_not_exist, "That link does not exist"))
             } catch (e: Exception) {
-                dismissAndShowAlert("Something went wrong")
+                dismissAndShowAlert(localized(R.string.something_went_wrong, "Something went wrong"))
             }
             isLoading.value = false
         }

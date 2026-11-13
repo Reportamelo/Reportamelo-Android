@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 data class PetitionPost(
     val title: String,
@@ -37,7 +39,7 @@ fun PetitionDetailView(petition: PetitionPost, offline: Boolean = false) {
                 title = { Text(petition.title) },
                 actions = {
                     IconButton(onClick = { /* Share */ }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share")
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share))
                     }
                 }
             )
@@ -53,7 +55,7 @@ fun PetitionDetailView(petition: PetitionPost, offline: Boolean = false) {
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text("Sign")
+                    Text(stringResource(R.string.sign))
                 }
             }
         }
@@ -82,17 +84,17 @@ fun PetitionDetailView(petition: PetitionPost, offline: Boolean = false) {
             ) {
                 Text("Publisher info placeholder")
 
-                SectionHeader("Description")
+                SectionHeader(stringResource(R.string.description))
                 Text(
                     text = petition.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                SectionHeader("Category")
+                SectionHeader(stringResource(R.string.category))
                 Text(petition.categoryId)
 
-                SectionHeader("Location")
+                SectionHeader(stringResource(R.string.location))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -103,34 +105,34 @@ fun PetitionDetailView(petition: PetitionPost, offline: Boolean = false) {
                     }
                 }
 
-                SectionHeader("Severity")
+                SectionHeader(stringResource(R.string.severity))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(Icons.Default.Warning, contentDescription = null)
-                    Text("High", fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.high), fontWeight = FontWeight.Medium)
                 }
 
-                SectionHeader("Confirmation Status")
+                SectionHeader(stringResource(R.string.confirmation_status))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Confirmed by 3 users", fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.confirmed_by_3_users), fontWeight = FontWeight.Medium)
                 }
 
-                SectionHeader("Petition")
+                SectionHeader(stringResource(R.string.petition))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     LinearProgressIndicator(
                         progress = { petition.progress },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Text("${petition.percentage} of ${petition.targetSignatures} signatures", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.of_lld_signatures, petition.percentage, petition.targetSignatures), style = MaterialTheme.typography.bodySmall)
                 }
 
-                SectionHeader("Comments")
+                SectionHeader(stringResource(R.string.comments))
             }
         }
     }

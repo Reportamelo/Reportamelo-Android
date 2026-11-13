@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,13 +29,13 @@ fun SignRequestsView() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Petitions") },
+                title = { Text(stringResource(R.string.petitions)) },
                 actions = {
                     IconButton(onClick = { showCreateRequestView = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))
                     }
                     IconButton(onClick = { /* Open menu for filters */ }) {
-                        Icon(Icons.Default.List, contentDescription = "Options")
+                        Icon(Icons.Default.List, contentDescription = stringResource(R.string.options))
                     }
                 }
             )
@@ -121,7 +123,7 @@ fun PetitionCard(petition: PetitionPost) {
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = "${petition.percentage} of ${petition.targetSignatures} signatures",
+                    text = stringResource(R.string.of_lld_signatures, petition.percentage, petition.targetSignatures),
                     style = MaterialTheme.typography.bodySmall
                 )
             }

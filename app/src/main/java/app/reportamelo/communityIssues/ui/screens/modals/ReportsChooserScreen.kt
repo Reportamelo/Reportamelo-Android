@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 // Mocks
 data class Report(
@@ -46,7 +48,7 @@ fun ReportsChooserScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            placeholder = { Text("Search a report") },
+            placeholder = { Text(stringResource(R.string.search_a_report)) },
             singleLine = true
         )
 
@@ -62,9 +64,9 @@ fun ReportsChooserScreen(
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Text("No reports yet.", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.no_reports_yet), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Please send us reports.",
+                        stringResource(R.string.please_send_us_reports),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -123,7 +125,7 @@ fun ReportSelectionRow(
             )
             if (report.reportedAt != null) {
                 Text(
-                    text = "Reported at: ${report.reportedAt}",
+                    text = stringResource(R.string.reported_at_s, report.reportedAt.toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -133,7 +135,7 @@ fun ReportSelectionRow(
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Selected",
+                contentDescription = stringResource(R.string.selected_text),
                 tint = MaterialTheme.colorScheme.secondary
             )
         }

@@ -1,5 +1,6 @@
 package app.reportamelo.communityIssues.ui.screens.modals
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
@@ -37,6 +38,7 @@ import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.models.Coordinate
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -45,11 +47,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import androidx.annotation.StringRes
 
-enum class MapModeOption(val title: String, val mapType: MapType) {
-    STANDARD("Standard", MapType.NORMAL),
-    IMAGERY("Satellite", MapType.SATELLITE),
-    HYBRID("Hybrid", MapType.HYBRID)
+enum class MapModeOption(val title: String, @StringRes val titleRes: Int, val mapType: MapType) {
+    STANDARD("Standard", R.string.standard, MapType.NORMAL),
+    IMAGERY("Satellite", R.string.satellite, MapType.SATELLITE),
+    HYBRID("Hybrid", R.string.hybrid, MapType.HYBRID)
 }
 
 @SuppressLint("MissingPermission")
@@ -190,7 +195,7 @@ fun MapPickerScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.close),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -203,13 +208,13 @@ fun MapPickerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Location",
+                        text = stringResource(R.string.location),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Move the map where you want to\nreport the issue",
+                        text = stringResource(R.string.move_the_map_where_you_want_to_report_the_issue_text),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -239,7 +244,7 @@ fun MapPickerScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Confirm Location",
+                            contentDescription = stringResource(R.string.confirm_location),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
@@ -262,7 +267,7 @@ fun MapPickerScreen(
                         ),
                         icon = {}
                     ) {
-                        Text(mode.title)
+                        Text(stringResource(mode.titleRes))
                     }
                 }
             }
@@ -295,7 +300,8 @@ fun MapPickerScreen(
                             false
                         }
                 ) {
-                    val mapStyleOptions = rememberMapStyleOptions()
+                    val isDarkTheme = isSystemInDarkTheme()
+                    val mapStyleOptions = rememberMapStyleOptions(isDarkTheme = isDarkTheme)
                     val mapProperties = remember(selectedMode.mapType, mapStyleOptions) {
                         MapProperties(
                             mapType = selectedMode.mapType,
@@ -306,6 +312,12 @@ fun MapPickerScreen(
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
+                        // Match the dark style's base color so the map doesn't flash white before tiles load
+                        googleMapOptionsFactory = {
+                            GoogleMapOptions().apply {
+                                if (isDarkTheme) backgroundColor(0xFF242F3E.toInt())
+                            }
+                        },
                         properties = mapProperties,
                         uiSettings = MapUiSettings(
                             zoomControlsEnabled = false,
@@ -320,18 +332,18 @@ fun MapPickerScreen(
                 // Centered target reticle icon matching iOS "scope" icon
                 Icon(
                     imageVector = Icons.Default.GpsFixed,
-                    contentDescription = "Target Location",
+                    contentDescription = stringResource(R.string.target_location),
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(40.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
 
-                // Right-side vertical floating pill (Locate, Zoom In, Zoom Out)
+                // Top-right vertical floating pill (Locate, Zoom In, Zoom Out) matching iOS mapControls
                 Surface(
                     modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 16.dp),
+                        .align(Alignment.TopEnd)
+                        .padding(top = 16.dp, end = 16.dp),
                     shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                     tonalElevation = 4.dp,
@@ -364,7 +376,7 @@ fun MapPickerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.NearMe,
-                                contentDescription = "Current location",
+                                contentDescription = stringResource(R.string.current_location),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -384,7 +396,7 @@ fun MapPickerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Zoom in",
+                                contentDescription = stringResource(R.string.zoom_in),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -404,7 +416,7 @@ fun MapPickerScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Remove,
-                                contentDescription = "Zoom out",
+                                contentDescription = stringResource(R.string.zoom_out),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -427,11 +439,13 @@ fun MapPickerScreen(
                         value = searchText,
                         onValueChange = { searchText = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Search a place") },
+                        placeholder = { Text(stringResource(R.string.search_a_place)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = "Search"
+                                contentDescription = stringResource(R.string.search),
+                                // Shifts the icon inward within the 48dp slot: more room from the pill edge, less gap to the text
+                                modifier = Modifier.padding(start = 12.dp)
                             )
                         },
                         trailingIcon = {
@@ -439,7 +453,7 @@ fun MapPickerScreen(
                                 IconButton(onClick = { searchText = "" }) {
                                     Icon(
                                         imageVector = Icons.Default.Clear,
-                                        contentDescription = "Clear"
+                                        contentDescription = stringResource(R.string.clear)
                                     )
                                 }
                             }

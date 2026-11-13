@@ -1,9 +1,13 @@
 package app.reportamelo.communityIssues.ui.screens.subviews
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -30,12 +34,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.reportamelo.communityIssues.BuildConfig
 import app.reportamelo.communityIssues.LocalAuthViewModel
+import app.reportamelo.communityIssues.LocalDeepLinkRouter
 import app.reportamelo.communityIssues.LocalNetworkMonitor
 import app.reportamelo.communityIssues.LocalSubscriptionManager
 import app.reportamelo.communityIssues.controllers.SettingsSubViewModel
 import app.reportamelo.communityIssues.datamodel.CoordinateSpan
 import app.reportamelo.communityIssues.datamodel.SettingsStore
+import app.reportamelo.communityIssues.helpers.AppLanguageManager
 import app.reportamelo.communityIssues.helpers.AppNotificationManager
 import app.reportamelo.communityIssues.ui.components.LinkType
 import app.reportamelo.communityIssues.ui.components.LinksView
@@ -43,6 +50,7 @@ import app.reportamelo.communityIssues.ui.components.LocalToastState
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.components.ToastType
+import app.reportamelo.communityIssues.ui.screens.tabs.CitySelectionMode
 import app.reportamelo.communityIssues.ui.screens.tabs.CitySelectionView
 import app.reportamelo.communityIssues.ui.theme.LightCardBackground
 import app.reportamelo.models.Coordinate
@@ -50,6 +58,9 @@ import app.reportamelo.models.FriendlyCityDistribution
 import app.reportamelo.repository.CitiesRepository
 import app.reportamelo.repository.UserRepository
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 private val SecondaryHeaderAndFooterColor = Color(0xFF8E8E93)
 
@@ -166,8 +177,7 @@ fun SettingsGroup(
             shape = RoundedCornerShape(24.dp),
             color = cardBackground,
             tonalElevation = 0.dp,
-            shadowElevation = 2.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            shadowElevation = 0.5.dp
         ) {
             Column(
                 modifier = Modifier
@@ -188,15 +198,31 @@ fun SettingsGroup(
     }
 }
 
+@Composable
+private fun languageLabel(languageTag: String): String {
+    return if (languageTag == AppLanguageManager.SYSTEM_DEFAULT) {
+        stringResource(R.string.system_default)
+    } else {
+        AppLanguageManager.displayName(languageTag)
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSubView(
     modifier: Modifier = Modifier,
-    subViewName: String = "Settings",
+    subViewName: String = stringResource(R.string.settings),
     settingsStore: SettingsStore = SettingsStore.shared,
     notificationManager: AppNotificationManager = AppNotificationManager,
     viewModel: SettingsSubViewModel = remember { SettingsSubViewModel() },
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    onAccountDeleted: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -204,6 +230,7 @@ fun SettingsSubView(
     val subscriptionManager = LocalSubscriptionManager.current
     val networkMonitor = LocalNetworkMonitor.current
     val toastState = LocalToastState.current
+    val router = LocalDeepLinkRouter.current
 
     val isGuest = remember { UserRepository.shared.isGuestUser() }
     val isPro by subscriptionManager.isPro.collectAsState()
@@ -234,7 +261,9 @@ fun SettingsSubView(
                 )
         )
     }
-    var showCitySelectorSheet by remember { mutableStateOf(false) }
+    var isSelectingCity by remember { mutableStateOf(false) }
+    var showLanguageMenu by remember { mutableStateOf(false) }
+    val selectedLanguage by viewModel.selectedLanguage.collectAsState()
 
     val updatingPrivacyLoading by viewModel.updatingPrivacySettingsLoading.collectAsState()
     val updatingNotificationLoading by viewModel.updatingNotificationSettingsLoading.collectAsState()
@@ -277,6 +306,36 @@ fun SettingsSubView(
     val cardBackground = if (isDark) MaterialTheme.colorScheme.surface else LightCardBackground
     val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.67f)
 
+    if (isSelectingCity) {
+        BackHandler { isSelectingCity = false }
+        CitySelectionView(
+            modifier = modifier,
+            mode = CitySelectionMode.MODIFY,
+            selectedCity = selectedCity,
+            onBack = { isSelectingCity = false },
+            onCitySelected = { newCity ->
+                selectedCity = newCity
+            },
+            nextStep = {
+                CitiesRepository.saveSelectedCity(selectedCity)
+                settingsStore.cityId = selectedCity.cityId
+                authViewModel.setSelectedCity(selectedCity)
+                authViewModel.setCameraPosition(
+                    to = selectedCity.coordinates,
+                    latitudeDelta = CoordinateSpan.CITY_SELECTION_LATITUDE_DELTA,
+                    longitudeDelta = CoordinateSpan.CITY_SELECTION_LONGITUDE_DELTA
+                )
+                isSelectingCity = false
+                onBack?.invoke()
+                if (router.activeTab.value == 1) {
+                    router.activeTab.value = 0
+                }
+                router.activeTab.value = 1
+            }
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -305,7 +364,7 @@ fun SettingsSubView(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(28.dp)
                         )
@@ -332,17 +391,17 @@ fun SettingsSubView(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Location Section
-            SettingsGroup(title = "Location") {
+            SettingsGroup(title = stringResource(R.string.location)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showCitySelectorSheet = true }
+                        .clickable { isSelectingCity = true }
                         .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "City",
+                        text = stringResource(R.string.city),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -363,10 +422,63 @@ fun SettingsSubView(
                 }
             }
 
+            // Language Section
+            SettingsGroup(title = stringResource(R.string.language)) {
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showLanguageMenu = true }
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.language),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = languageLabel(selectedLanguage),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = showLanguageMenu,
+                        onDismissRequest = { showLanguageMenu = false }
+                    ) {
+                        viewModel.supportedLanguages.forEach { languageTag ->
+                            DropdownMenuItem(
+                                text = { Text(languageLabel(languageTag)) },
+                                onClick = {
+                                    showLanguageMenu = false
+                                    // Android 13+ recreates the activity by itself after the change
+                                    if (viewModel.updateLanguage(languageTag) &&
+                                        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                                    ) {
+                                        context.findActivity()?.recreate()
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             // Subscription Section
             SettingsGroup(
-                title = "Subscription",
-                footerText = "You can help us improve the app by supporting us. Thank you!",
+                title = stringResource(R.string.subscription),
+                footerText = stringResource(R.string.you_can_help_us_to_improve_the_app_by_supporting_us),
                 enabled = !isGuest
             ) {
                 if (isPro) {
@@ -378,12 +490,12 @@ fun SettingsSubView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Reportamelo Pro",
+                            text = stringResource(R.string.reportamelo_pro),
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color(0xFF34C759)
                         )
                         Text(
-                            text = "Active",
+                            text = stringResource(R.string.active),
                             style = MaterialTheme.typography.bodyLarge,
                             color = SecondaryHeaderAndFooterColor
                         )
@@ -409,7 +521,7 @@ fun SettingsSubView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Manage Subscription",
+                            text = stringResource(R.string.manage_subscription),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -432,12 +544,12 @@ fun SettingsSubView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Reportamelo Pro",
+                            text = stringResource(R.string.reportamelo_pro),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Upgrade",
+                            text = stringResource(R.string.upgrade),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -454,12 +566,12 @@ fun SettingsSubView(
                                     subscriptionManager.restorePurchases()
                                     if (subscriptionManager.isPro.value) {
                                         toastState.show(
-                                            message = "Your subscription has been restored.",
+                                            message = localized(R.string.your_subscription_has_been_restored, "Your subscription has been restored."),
                                             type = ToastType.Success
                                         )
                                     } else {
                                         toastState.show(
-                                            message = "No active subscription was found.",
+                                            message = localized(R.string.no_active_subscription_was_found, "No active subscription was found."),
                                             type = ToastType.Info
                                         )
                                     }
@@ -470,14 +582,39 @@ fun SettingsSubView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Do you have a subscription?",
+                            text = stringResource(R.string.do_you_have_a_subscription),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Restore",
+                            text = stringResource(R.string.restore),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                // Debug-only mock so flows that require an active subscription can be tested
+                if (BuildConfig.DEBUG) {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = dividerColor
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Mock Pro subscription (debug)",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SettingsSwitch(
+                            checked = isPro,
+                            enabled = !isGuest,
+                            onCheckedChange = { subscriptionManager.setMockIsPro(it) }
                         )
                     }
                 }
@@ -485,8 +622,8 @@ fun SettingsSubView(
 
             // Privacy Section
             SettingsGroup(
-                title = "Privacy",
-                footerText = "You can show or hide your profile and your username when you share your reports and petitions with others.",
+                title = stringResource(R.string.privacy),
+                footerText = stringResource(R.string.you_can_show_or_hide_your_profile_and_your_username_when_you_share_your_reports_and_petitions_with_others),
                 isLoading = updatingPrivacyLoading,
                 enabled = !isGuest
             ) {
@@ -496,7 +633,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show my profile",
+                        text = stringResource(R.string.show_my_profile),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -521,7 +658,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Show my user name when I share",
+                        text = stringResource(R.string.show_my_user_name_when_i_share),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -540,8 +677,8 @@ fun SettingsSubView(
 
             // Notifications Section
             SettingsGroup(
-                title = "Notifications",
-                footerText = "You can enable or disable push notifications in order to receive updates when authorities are resolving your report or petition.",
+                title = stringResource(R.string.notifications),
+                footerText = stringResource(R.string.you_can_enable_or_disable_push_notifications_in_order_to_receive_updates_when_authorities_are_resolving_your_report_or_petition),
                 isLoading = updatingNotificationLoading,
                 enabled = !isGuest
             ) {
@@ -551,7 +688,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Push notifications",
+                        text = stringResource(R.string.push_notifications),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -587,7 +724,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Email notifications",
+                        text = stringResource(R.string.email_notifications),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -606,7 +743,7 @@ fun SettingsSubView(
 
             // App settings Section
             SettingsGroup(
-                title = "App settings",
+                title = stringResource(R.string.app_settings),
                 enabled = !isGuest,
                 footerContent = {
                     LinksView(
@@ -621,7 +758,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Save last location",
+                        text = stringResource(R.string.save_last_location),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -645,7 +782,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Use my current location",
+                        text = stringResource(R.string.use_my_current_location),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -669,7 +806,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Anonymous telemetry",
+                        text = stringResource(R.string.anonymous_telemetry),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
@@ -687,23 +824,23 @@ fun SettingsSubView(
 
             // Dangerous zone Section
             SettingsGroup(
-                title = "Dangerous zone",
-                footerText = "Once your account is deleted, there is no going back.",
+                title = stringResource(R.string.dangerous_zone),
+                footerText = stringResource(R.string.once_your_account_is_deleted_there_is_no_going_back),
                 enabled = !isGuest
             ) {
                 Text(
-                    text = "You have control over your data and you can opt to delete your account at any time.",
+                    text = stringResource(R.string.you_have_control_over_your_data_and_you_can_opt_to_delete_your_account),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "If your are using Login with Apple you have to revoke the access to your account from Apple to delete your access to this app.",
+                    text = stringResource(R.string.if_your_are_using_login_with_apple_you_have_to_revoke_the_access_to_your_account_from_apple_to_delete_your_access_to_this_app),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 ThemedButton(
-                    message = "Delete my account",
+                    message = stringResource(R.string.delete_my_account),
                     onClick = { viewModel.handleDeleteRequest(isPro = isPro) },
                     type = ThemedButtonType.DANGER,
                     isLoading = isDeletingAccount,
@@ -712,7 +849,7 @@ fun SettingsSubView(
             }
 
             // About Section
-            SettingsGroup(title = "About") {
+            SettingsGroup(title = stringResource(R.string.about)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -721,7 +858,7 @@ fun SettingsSubView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Version",
+                        text = stringResource(R.string.version),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -774,10 +911,10 @@ fun SettingsSubView(
     if (showActiveSubscriptionAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissActiveSubscriptionAlert() },
-            title = { Text("Active Subscription Detected") },
+            title = { Text(stringResource(R.string.active_subscription_detected)) },
             text = {
                 Text(
-                    "You currently have an active Reportamelo Pro subscription. Deleting your account will NOT automatically cancel your billing with Google Play. Would you like to manage your subscription first, or proceed with deleting your account?"
+                    stringResource(R.string.you_currently_have_an_active_reportamelo_pro_subscription_deleting_you)
                 )
             },
             confirmButton = {
@@ -793,13 +930,13 @@ fun SettingsSubView(
                         }
                     }
                 ) {
-                    Text("Manage Subscription")
+                    Text(stringResource(R.string.manage_subscription))
                 }
             },
             dismissButton = {
                 Row {
                     TextButton(onClick = { viewModel.dismissActiveSubscriptionAlert() }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                     TextButton(
                         onClick = { viewModel.proceedToDeleteAlert() },
@@ -807,7 +944,7 @@ fun SettingsSubView(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Proceed to Delete")
+                        Text(stringResource(R.string.proceed_to_delete))
                     }
                 }
             }
@@ -817,50 +954,38 @@ fun SettingsSubView(
     if (showDeleteAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteAlert() },
-            title = { Text("Delete Account?") },
+            title = { Text(stringResource(R.string.delete_account_text)) },
             text = {
-                Text("This action is permanent and cannot be undone. All your data will be permanently removed.")
+                Text(stringResource(R.string.this_action_is_permanent_and_cannot_be_undone_all_your_data_will_be_pe))
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         viewModel.dismissDeleteAlert()
-                        viewModel.deleteAccount()
+                        viewModel.deleteAccount(
+                            onDeleted = { onAccountDeleted?.invoke() },
+                            onFailed = {
+                                coroutineScope.launch {
+                                    toastState.show(
+                                        message = localized(R.string.we_couldn_t_delete_your_account_please_try_again, "We couldn't delete your account. Please try again."),
+                                        type = ToastType.Error
+                                    )
+                                }
+                            }
+                        )
                     },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissDeleteAlert() }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
-    }
-
-    if (showCitySelectorSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showCitySelectorSheet = false }
-        ) {
-            CitySelectionView(
-                selectedCity = selectedCity,
-                onCitySelected = { newCity ->
-                    selectedCity = newCity
-                    CitiesRepository.saveSelectedCity(newCity)
-                    settingsStore.cityId = newCity.cityId
-                    authViewModel.setSelectedCity(newCity)
-                    authViewModel.setCameraPosition(
-                        to = newCity.coordinates,
-                        latitudeDelta = CoordinateSpan.CITY_SELECTION_LATITUDE_DELTA,
-                        longitudeDelta = CoordinateSpan.CITY_SELECTION_LONGITUDE_DELTA
-                    )
-                    showCitySelectorSheet = false
-                }
-            )
-        }
     }
 }

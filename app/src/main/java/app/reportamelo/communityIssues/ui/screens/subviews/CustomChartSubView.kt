@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Calendar
 import java.util.Date
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 // CustomChartSubView models
 data class MonthlyData(
@@ -78,13 +80,13 @@ fun StatsCardView(stats: StatsSummary) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Entries",
+                text = stringResource(R.string.entries),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "This Year",
+                text = stringResource(R.string.this_year),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
             )

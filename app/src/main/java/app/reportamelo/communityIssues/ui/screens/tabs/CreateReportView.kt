@@ -45,6 +45,8 @@ import app.reportamelo.communityIssues.ui.screens.modals.ReportLimitScreen
 import app.reportamelo.communityIssues.ui.screens.subviews.color
 import app.reportamelo.communityIssues.ui.theme.Dimensions
 import app.reportamelo.repository.UserRepository
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,8 +102,8 @@ fun CreateReportView(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFFFF9500).copy(alpha = 0.16f),
-                            Color(0xFFFF9500).copy(alpha = 0.05f),
+                            Color(0xFFFF9500).copy(alpha = 0.07f),
+                            Color(0xFFFF9500).copy(alpha = 0.02f),
                             Color.Transparent
                         )
                     )
@@ -123,14 +125,14 @@ fun CreateReportView(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Report",
+                        text = stringResource(R.string.report),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "what do you want to report?",
+                        text = stringResource(R.string.what_do_you_want_to_report),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -151,7 +153,7 @@ fun CreateReportView(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.FilterList,
-                                contentDescription = "Options",
+                                contentDescription = stringResource(R.string.options),
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -162,7 +164,7 @@ fun CreateReportView(
                         onDismissRequest = { showFilterMenu = false }
                     ) {
                         Text(
-                            text = "Issue Type",
+                            text = stringResource(R.string.issue_type),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
@@ -188,7 +190,7 @@ fun CreateReportView(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
                         Text(
-                            text = "Severity",
+                            text = stringResource(R.string.severity),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
@@ -220,15 +222,17 @@ fun CreateReportView(
                 onValueChange = { controller.updateSearchText(it) },
                 placeholder = {
                     Text(
-                        text = "Search",
+                        text = stringResource(R.string.search),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        contentDescription = stringResource(R.string.search),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        // Shifts the icon inward within the 48dp slot: more room from the pill edge, less gap to the text
+                        modifier = Modifier.padding(start = 12.dp)
                     )
                 },
                 trailingIcon = {
@@ -236,7 +240,7 @@ fun CreateReportView(
                         IconButton(onClick = { controller.updateSearchText("") }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear search",
+                                contentDescription = stringResource(R.string.clear_search),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -245,10 +249,10 @@ fun CreateReportView(
                 singleLine = true,
                 shape = CircleShape,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()

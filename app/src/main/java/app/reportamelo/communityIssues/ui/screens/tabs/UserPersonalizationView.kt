@@ -37,6 +37,8 @@ import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonStyle
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.theme.radialGradientBackground
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +82,7 @@ fun UserPersonalizationView(
         containerColor = Color.Transparent,
         topBar = {
             UserPersonalizationTopBar(
-                title = "Personalize your profile",
+                title = stringResource(R.string.personalize_your_profile),
                 onBack = onBack
             )
         },
@@ -93,7 +95,7 @@ fun UserPersonalizationView(
                         .padding(horizontal = 36.dp, vertical = 20.dp)
                 ) {
                     ThemedButton(
-                        message = "Next Step",
+                        message = stringResource(R.string.next_step),
                         type = ThemedButtonType.SECONDARY,
                         style = ThemedButtonStyle.NORMAL,
                         isLoading = isLoading,
@@ -165,8 +167,8 @@ fun UserPersonalizationView(
                         onValueChange = { newValue ->
                             userPersonalizationDataModel.onUserNameChanged(newValue)
                         },
-                        label = "User Name",
-                        placeholder = "Choose a username",
+                        label = stringResource(R.string.user_name),
+                        placeholder = stringResource(R.string.choose_a_username),
                         validators = userNameValidator,
                         onValidChange = { valid ->
                             userPersonalizationDataModel.setIsUserNameValid(valid)
@@ -197,7 +199,7 @@ fun UserPersonalizationView(
     if (showErrorAlert) {
         AlertDialog(
             onDismissRequest = { userPersonalizationDataModel.dismissError() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.error)) },
             text = { Text(messageError) },
             confirmButton = {
                 TextButton(onClick = { userPersonalizationDataModel.dismissError() }) {
@@ -243,7 +245,7 @@ private fun UserPersonalizationTopBar(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(26.dp)
                 )
@@ -268,7 +270,7 @@ private fun UserNameAvailabilityIndicator(
     when (availability) {
         UserNameAvailabilityStatus.AVAILABLE -> {
             Text(
-                text = "Available",
+                text = stringResource(R.string.available),
                 fontSize = 13.sp,
                 color = Color(0xFF34C759),
                 modifier = modifier

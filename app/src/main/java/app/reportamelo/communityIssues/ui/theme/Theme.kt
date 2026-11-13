@@ -2,7 +2,11 @@ package app.reportamelo.communityIssues.ui.theme
 
 import android.app.Activity
 import android.os.Build
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -15,10 +19,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
@@ -32,7 +38,15 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = DarkForeground,
     error = DarkDestructive,
     outline = DarkBorder,
-    surfaceVariant = DarkMuted
+    outlineVariant = DarkBorder,
+    surfaceVariant = DarkMuted,
+    // Containers used by Material components (sheets, menus, dialogs, cards);
+    // without these they fall back to the purple-tinted Material baseline
+    surfaceContainerLowest = DarkCardBackground,
+    surfaceContainerLow = DarkBackground,
+    surfaceContainer = DarkCardBackground,
+    surfaceContainerHigh = DarkAccent,
+    surfaceContainerHighest = DarkInputBackground
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -46,7 +60,15 @@ private val LightColorScheme = lightColorScheme(
     onBackground = LightForeground,
     error = LightDestructive,
     outline = LightBorder,
-    surfaceVariant = LightMuted
+    outlineVariant = LightBorder,
+    surfaceVariant = LightMuted,
+    // Containers used by Material components (sheets, menus, dialogs, cards);
+    // without these they fall back to the purple-tinted Material baseline
+    surfaceContainerLowest = LightCardBackground,
+    surfaceContainerLow = LightBackground,
+    surfaceContainer = LightCardBackground,
+    surfaceContainerHigh = LightAccent,
+    surfaceContainerHighest = LightInputBackground
 )
 
 @Composable
@@ -83,6 +105,27 @@ fun CommunityIssueReporterTheme(
         content = content
     )
 }
+
+// Fill for the round toolbar buttons (close, back, more): same tone as the cards
+// so they sit on the view background instead of the warm muted color
+@Composable
+fun toolbarButtonColor(): Color = if (isSystemInDarkTheme()) {
+    MaterialTheme.colorScheme.surfaceVariant
+} else {
+    MaterialTheme.colorScheme.surface
+}
+
+@Composable
+fun toolbarButtonBorder(): BorderStroke = BorderStroke(
+    0.5.dp,
+    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+)
+
+@Composable
+fun Modifier.toolbarButtonBackground(shape: Shape = CircleShape): Modifier =
+    this
+        .background(toolbarButtonColor(), shape)
+        .border(toolbarButtonBorder(), shape)
 
 @Composable
 fun Modifier.radialGradientBackground(

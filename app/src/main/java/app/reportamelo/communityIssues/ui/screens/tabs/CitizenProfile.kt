@@ -93,6 +93,7 @@ import app.reportamelo.communityIssues.datamodel.status
 import app.reportamelo.communityIssues.datamodel.updatedDate
 import app.reportamelo.repository.UserRepository
 import coil.compose.SubcomposeAsyncImage
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBackground
 
 enum class AppTab {
     REPORTS,
@@ -195,7 +196,7 @@ fun CitizenProfile(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -221,7 +222,7 @@ fun CitizenProfile(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.MoreHoriz,
-                                    contentDescription = "Options"
+                                    contentDescription = stringResource(R.string.options)
                                 )
                             }
 
@@ -267,6 +268,8 @@ fun CitizenProfile(
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
 
                     if (onClose != null) {
@@ -720,7 +723,7 @@ fun BlockUserSheet(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .toolbarButtonBackground()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,

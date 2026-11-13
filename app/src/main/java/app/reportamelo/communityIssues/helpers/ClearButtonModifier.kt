@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 fun Modifier.clearButton(
     text: String,
@@ -40,7 +42,7 @@ fun ClearButtonOverlay(
         if (text.isNotEmpty() && !disabled) {
             Icon(
                 imageVector = Icons.Default.Clear,
-                contentDescription = "Clear",
+                contentDescription = stringResource(R.string.clear),
                 tint = Color.Gray,
                 modifier = Modifier
                     .padding(end = if (isPill) 16.dp else 0.dp)

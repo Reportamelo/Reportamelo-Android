@@ -12,6 +12,8 @@ import app.reportamelo.communityIssues.LocalSettingsStore
 import app.reportamelo.communityIssues.controllers.LandingViewModel
 import app.reportamelo.communityIssues.ui.screens.tabs.AcceptanceView
 import app.reportamelo.communityIssues.ui.screens.tabs.CitySelectionView
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun WelcomeView(
@@ -28,6 +30,7 @@ fun WelcomeView(
     val presentAlert by landingViewModel.presentAlert.collectAsState()
     val alertTitle by landingViewModel.alertTitle.collectAsState()
     val alertMessage by landingViewModel.message.collectAsState()
+    val accountDeleted by landingViewModel.accountDeleted.collectAsState()
 
     var showGuestCitySelection by remember { mutableStateOf(false) }
 
@@ -43,6 +46,19 @@ fun WelcomeView(
             text = { Text(alertMessage) },
             confirmButton = {
                 TextButton(onClick = { landingViewModel.dismissAlert() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (accountDeleted) {
+        AlertDialog(
+            onDismissRequest = { landingViewModel.setAccountDeleted(false) },
+            title = { Text(stringResource(R.string.account_deleted)) },
+            text = { Text(stringResource(R.string.your_account_was_deleted_but_you_can_register_again_whenever_you_want_text)) },
+            confirmButton = {
+                TextButton(onClick = { landingViewModel.setAccountDeleted(false) }) {
                     Text("OK")
                 }
             }

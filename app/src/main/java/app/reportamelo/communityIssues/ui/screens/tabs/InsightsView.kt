@@ -23,6 +23,8 @@ import app.reportamelo.communityIssues.ui.screens.subviews.InsightsCalendarView
 import app.reportamelo.communityIssues.ui.screens.subviews.MyPetitionsSubView
 import app.reportamelo.communityIssues.ui.screens.subviews.MyReportsSubView
 import app.reportamelo.communityIssues.ui.screens.subviews.SimpleView
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun InsightsView(
@@ -49,13 +51,13 @@ fun InsightsView(
             InsightsNavigation.MyReports -> {
                 MyReportsSubView(
                     modifier = modifier,
-                    subViewName = "My reports",
+                    subViewName = stringResource(R.string.my_reports),
                     onBack = { viewModel.navigateBack() }
                 )
             }
             InsightsNavigation.MyPetitions -> {
                 MyPetitionsSubView(
-                    subViewName = "My petitions"
+                    subViewName = stringResource(R.string.my_petitions)
                 )
             }
             is InsightsNavigation.Activity -> {
@@ -128,7 +130,7 @@ fun InsightsView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Insights",
+                    text = stringResource(R.string.insights),
                     fontSize = 34.sp,
                     lineHeight = 40.sp,
                     fontWeight = FontWeight.Bold,

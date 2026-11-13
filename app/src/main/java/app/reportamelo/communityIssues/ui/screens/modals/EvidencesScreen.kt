@@ -61,6 +61,7 @@ import app.reportamelo.repository.EvidenceRepository
 import app.reportamelo.repository.ReportRepository
 import app.reportamelo.repository.UserRepository
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBackground
 
 private val AttachEvidencePeach = Color(0xFFF3B391)
 private val AttachEvidenceOrange = Color(0xFFE67E22)
@@ -119,11 +120,11 @@ fun EvidencesScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                    .toolbarButtonBackground()
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -138,7 +139,7 @@ fun EvidencesScreen(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                            .toolbarButtonBackground()
                     ) {
                         Icon(
                             imageVector = Icons.Default.AddPhotoAlternate,
@@ -154,7 +155,7 @@ fun EvidencesScreen(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                            .toolbarButtonBackground()
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -315,7 +316,7 @@ fun AttachEvidencesScreen(
                         .align(Alignment.CenterStart)
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                        .toolbarButtonBackground()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,

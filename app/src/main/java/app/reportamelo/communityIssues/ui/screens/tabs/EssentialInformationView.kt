@@ -133,7 +133,7 @@ fun EssentialInformationView(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(28.dp)
                             )
@@ -269,7 +269,7 @@ fun EssentialInformationView(
         val resolvedMessage = messageErrorRes?.let { stringResource(it) } ?: messageError
         AlertDialog(
             onDismissRequest = { viewModel.dismissErrorAlert() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.error)) },
             text = { Text(resolvedMessage) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissErrorAlert() }) {

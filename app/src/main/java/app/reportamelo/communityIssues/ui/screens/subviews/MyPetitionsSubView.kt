@@ -17,6 +17,8 @@ import kotlinx.coroutines.delay
 import app.reportamelo.models.PetitionPost
 import app.reportamelo.commons.ViewOptions
 import app.reportamelo.communityIssues.ui.components.LoadingView
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun PetitionCellView(petition: PetitionPost) {
@@ -71,8 +73,8 @@ fun MyPetitionsSubView(subViewName: String, mode: ViewOptions = ViewOptions.LIST
                 ) {
                     Icon(Icons.Default.PersonOutline, contentDescription = null, modifier = Modifier.size(64.dp))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No petitions yet.", style = MaterialTheme.typography.titleLarge)
-                    Text("Please create petitions to accelerate the process...")
+                    Text(stringResource(R.string.no_petitions_yet), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.please_create_petitions_to_accelerate_the_process))
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {

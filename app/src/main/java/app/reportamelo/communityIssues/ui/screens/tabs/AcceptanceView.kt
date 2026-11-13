@@ -28,6 +28,8 @@ import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.components.WebBrowserView
 import app.reportamelo.communityIssues.ui.theme.radialGradientBackground
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 data class URLItem(val id: UUID = UUID.randomUUID(), val url: Uri)
 data class LegalDocument(val id: UUID = UUID.randomUUID(), val url: Uri, val documentName: String)
@@ -41,7 +43,7 @@ fun AcceptanceView(
     val isDark = isSystemInDarkTheme()
     var selectedURLItem by remember { mutableStateOf<URLItem?>(null) }
     var accepted by remember { mutableStateOf(false) }
-    val buttonMessage = "Next"
+    val buttonMessage = stringResource(R.string.next)
 
     val legalLinks = remember {
         listOf(
@@ -95,7 +97,7 @@ fun AcceptanceView(
                 .statusBarsPadding()
         ) {
             Text(
-                text = "Legal Documents",
+                text = stringResource(R.string.legal_documents),
                 fontSize = 34.sp,
                 lineHeight = 41.sp,
                 fontWeight = FontWeight.Bold,
@@ -108,7 +110,7 @@ fun AcceptanceView(
             )
 
             Text(
-                text = "We take your privacy seriously, \nplease take time to read our documents.",
+                text = stringResource(R.string.we_take_your_privacy_seriously_please_take_time_to_read_our_documents),
                 fontSize = 16.sp,
                 lineHeight = 21.sp,
                 fontWeight = FontWeight.Normal,
@@ -191,7 +193,7 @@ fun AcceptanceView(
                 AcceptanceCheckboxIcon(checked = accepted)
 
                 Text(
-                    text = "I have read and accept the documents",
+                    text = stringResource(R.string.i_have_read_and_accept_the_documents),
                     fontSize = 16.sp,
                     lineHeight = 21.sp,
                     fontWeight = FontWeight.Normal,

@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -39,10 +41,21 @@ import app.reportamelo.communityIssues.controllers.LandingViewModel
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonStyle
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
+import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
 import app.reportamelo.communityIssues.ui.theme.radialGradientBackground
 import app.reportamelo.models.FriendlyCityDistribution
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
-enum class CitySelectionMode { MODIFY, STEP }
+enum class CitySelectionMode {
+    MODIFY,
+    STEP;
+
+    companion object {
+        val modify = MODIFY
+        val step = STEP
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +63,7 @@ fun CitySelectionView(
     modifier: Modifier = Modifier,
     mode: CitySelectionMode = CitySelectionMode.STEP,
     selectedCity: FriendlyCityDistribution? = null,
+    onBack: (() -> Unit)? = null,
     onCitySelected: (FriendlyCityDistribution) -> Unit = {},
     nextStep: () -> Unit = {},
     viewModel: CitySelectionViewModel = remember {
@@ -61,11 +75,12 @@ fun CitySelectionView(
         state.friendlyCities.documents?.sortedByDescending { it.isCapitalCity ?: 0 } ?: emptyList()
     }
     val listState = rememberLazyListState()
+    var currentSelectedCity by remember(selectedCity) { mutableStateOf(selectedCity) }
 
     if (state.showErrorAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissError() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.error)) },
             text = { Text(state.messageError) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissError() }) {
@@ -84,11 +99,34 @@ fun CitySelectionView(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Select a city",
+                        text = stringResource(R.string.select_a_city),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                },
+                navigationIcon = {
+                    if (onBack != null) {
+                        Surface(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .padding(start = 12.dp)
+                                .size(40.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 2.dp,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = stringResource(R.string.back),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
@@ -115,9 +153,9 @@ fun CitySelectionView(
                     .padding(top = 16.dp, bottom = if (mode == CitySelectionMode.MODIFY) 16.dp else 12.dp)
             ) {
                 ThemedButton(
-                    message = if (mode == CitySelectionMode.MODIFY) "Select" else "Next Step",
+                    message = if (mode == CitySelectionMode.MODIFY) stringResource(R.string.select) else stringResource(R.string.next_step),
                     onClick = {
-                        val targetCity = selectedCity ?: cities.firstOrNull()
+                        val targetCity = currentSelectedCity ?: selectedCity ?: cities.firstOrNull()
                         if (targetCity != null) {
                             onCitySelected(targetCity)
                             viewModel.updateCity(targetCity) {
@@ -130,7 +168,7 @@ fun CitySelectionView(
                     type = ThemedButtonType.SECONDARY,
                     style = ThemedButtonStyle.PROMINENT,
                     isLoading = state.isLoading,
-                    isEnabled = selectedCity != null || cities.isNotEmpty()
+                    isEnabled = (currentSelectedCity != null || selectedCity != null || cities.isNotEmpty()) && !state.isLoading
                 )
             }
         }
@@ -149,14 +187,14 @@ fun CitySelectionView(
                 shape = CircleShape,
                 placeholder = {
                     Text(
-                        text = "Search a city",
+                        text = stringResource(R.string.search_a_city),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
+                        contentDescription = stringResource(R.string.search),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -169,7 +207,7 @@ fun CitySelectionView(
                         IconButton(onClick = { viewModel.updateSearchText("") }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear search",
+                                contentDescription = stringResource(R.string.clear_search),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -199,9 +237,9 @@ fun CitySelectionView(
                 CityFilter.entries.forEach { filter ->
                     val isSelected = state.searchOptionsSelection == filter
                     val label = when (filter) {
-                        CityFilter.CITY -> "District / City"
-                        CityFilter.LEGAL -> "Municipality"
-                        CityFilter.STATE -> "Department"
+                        CityFilter.CITY -> stringResource(R.string.district_city)
+                        CityFilter.LEGAL -> stringResource(R.string.municipality)
+                        CityFilter.STATE -> stringResource(R.string.department)
                     }
                     FilterChip(
                         selected = isSelected,
@@ -236,7 +274,7 @@ fun CitySelectionView(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "There are no cities that match with your search.",
+                        text = stringResource(R.string.there_are_no_cities_that_match_with_your_search),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -245,7 +283,7 @@ fun CitySelectionView(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
                 ) {
                     items(cities, key = { it.cityId }) { city ->
                         val itemZIndex by remember(listState, city.cityId) {
@@ -253,13 +291,17 @@ fun CitySelectionView(
                                 calculateStackingZIndex(listState, city.cityId)
                             }
                         }
+                        val isSelected = (currentSelectedCity?.cityId ?: selectedCity?.cityId) == city.cityId
                         CityCellView(
                             modifier = Modifier
                                 .zIndex(itemZIndex)
                                 .scrollStackingEffect(listState = listState, itemKey = city.cityId),
                             city = city,
-                            isSelected = selectedCity?.cityId == city.cityId,
-                            onClick = { onCitySelected(city) }
+                            isSelected = isSelected,
+                            onClick = {
+                                currentSelectedCity = city
+                                onCitySelected(city)
+                            }
                         )
                     }
                 }
@@ -355,7 +397,7 @@ fun CityCellView(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         border = if (isSelected) {
-            BorderStroke(6.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.67f))
+            BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
         } else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
         }
@@ -387,5 +429,26 @@ fun CityCellView(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CitySelectionViewStepPreview() {
+    CommunityIssueReporterTheme {
+        CitySelectionView(
+            mode = CitySelectionMode.STEP
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CitySelectionViewModifyPreview() {
+    CommunityIssueReporterTheme {
+        CitySelectionView(
+            mode = CitySelectionMode.MODIFY,
+            onBack = {}
+        )
     }
 }

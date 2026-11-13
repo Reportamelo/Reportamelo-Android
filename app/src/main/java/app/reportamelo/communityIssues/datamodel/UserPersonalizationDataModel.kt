@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 enum class UserNameAvailabilityStatus {
     AVAILABLE,
@@ -165,9 +167,9 @@ class UserPersonalizationDataModel(
                     onFailure = { error ->
                         _userNameAvailability.value = UserNameAvailabilityStatus.ERROR
                         _userNameErrorMessage.value = when (error) {
-                            is UserError.Taken -> "User name is taken"
-                            is UserError.InvalidUserName -> "User name is invalid"
-                            else -> "Something went wrong, try again"
+                            is UserError.Taken -> localized(R.string.user_name_is_taken, "User name is taken")
+                            is UserError.InvalidUserName -> localized(R.string.user_name_is_invalid, "User name is invalid")
+                            else -> localized(R.string.something_went_wrong_try_again, "Something went wrong, try again")
                         }
                     }
                 )
@@ -201,7 +203,7 @@ class UserPersonalizationDataModel(
                         when (error) {
                             is UserError.ServerError -> show(error.message)
                             is UserError.UnknownError -> show(error.message)
-                            else -> show("Something went wrong, please try again.")
+                            else -> show(localized(R.string.something_went_wrong_please_try_again, "Something went wrong, please try again."))
                         }
                     }
                 )

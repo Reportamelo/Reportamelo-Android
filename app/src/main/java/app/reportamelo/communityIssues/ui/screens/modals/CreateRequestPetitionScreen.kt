@@ -14,12 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import androidx.annotation.StringRes
 
 // Mocks
-enum class PetitionCategory(val title: String, val minSignatures: Int) {
-    ALL("Select a category", 0),
-    ENVIRONMENT("Environment", 50),
-    INFRASTRUCTURE("Infrastructure", 100)
+enum class PetitionCategory(val title: String, @StringRes val titleRes: Int, val minSignatures: Int) {
+    ALL("Select a category", R.string.select_a_category, 0),
+    ENVIRONMENT("Environment", R.string.environment, 50),
+    INFRASTRUCTURE("Infrastructure", R.string.infrastructure, 100)
 }
 
 data class Petition(
@@ -43,10 +46,10 @@ fun CreateRequestPetitionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Petition") },
+                title = { Text(stringResource(R.string.create_petition)) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 },
                 actions = {
@@ -60,7 +63,7 @@ fun CreateRequestPetitionScreen(
                         if (isSubmitting) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         } else {
-                            Icon(Icons.Default.Check, contentDescription = "Submit")
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.submit))
                         }
                     }
                 }
@@ -75,21 +78,21 @@ fun CreateRequestPetitionScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Details of the request", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.details_of_the_request), style = MaterialTheme.typography.titleMedium)
             
             OutlinedTextField(
                 value = petition.title,
                 onValueChange = { petition = petition.copy(title = it) },
-                label = { Text("Title") },
-                placeholder = { Text("Please enter a title") },
+                label = { Text(stringResource(R.string.title)) },
+                placeholder = { Text(stringResource(R.string.please_enter_a_title_text)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = petition.description,
                 onValueChange = { petition = petition.copy(description = it) },
-                label = { Text("Description") },
-                placeholder = { Text("Please enter a description") },
+                label = { Text(stringResource(R.string.description)) },
+                placeholder = { Text(stringResource(R.string.please_enter_a_description_text)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
@@ -100,10 +103,10 @@ fun CreateRequestPetitionScreen(
                 onExpandedChange = { expanded = !expanded }
             ) {
                 OutlinedTextField(
-                    value = petition.category.title,
+                    value = stringResource(petition.category.titleRes),
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Category") },
+                    label = { Text(stringResource(R.string.category)) },
                     trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -113,7 +116,7 @@ fun CreateRequestPetitionScreen(
                 ) {
                     PetitionCategory.values().forEach { selectionOption ->
                         DropdownMenuItem(
-                            text = { Text(selectionOption.title) },
+                            text = { Text(stringResource(selectionOption.titleRes)) },
                             onClick = {
                                 petition = petition.copy(
                                     category = selectionOption,
@@ -128,10 +131,10 @@ fun CreateRequestPetitionScreen(
 
             HorizontalDivider()
             
-            Text("Reports", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.reports), style = MaterialTheme.typography.titleMedium)
             
             ListItem(
-                headlineContent = { Text("Choose report(s)") },
+                headlineContent = { Text(stringResource(R.string.choose_report_s)) },
                 trailingContent = {
                     if (petition.reportsIds.isNotEmpty()) {
                         Badge { Text(petition.reportsIds.size.toString()) }
@@ -144,14 +147,14 @@ fun CreateRequestPetitionScreen(
 
             HorizontalDivider()
             
-            Text("Set the amount of signatures needed", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.set_the_amount_of_signatures_needed), style = MaterialTheme.typography.titleMedium)
             
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Signatures: ${petition.targetSignatures}")
+                Text(stringResource(R.string.signatures_d, petition.targetSignatures))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = { petition = petition.copy(targetSignatures = (petition.targetSignatures - 1).coerceAtLeast(petition.category.minSignatures)) }
@@ -166,7 +169,7 @@ fun CreateRequestPetitionScreen(
                 }
             }
             Text(
-                "The minimum amount of signatures depends of the category. For the chosen category, the minimum amount of signatures is ${petition.category.minSignatures}",
+                stringResource(R.string.minimum_signatures_for_category_d, petition.category.minSignatures),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

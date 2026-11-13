@@ -1,9 +1,11 @@
 package app.reportamelo.communityIssues.helpers.maps
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.clustering.ClusterItem
@@ -33,7 +35,8 @@ fun MapWithClustering(
         position = CameraPosition.fromLatLngZoom(LatLng(13.701270, -89.224432), 11f)
     }
 
-    val mapStyleOptions = rememberMapStyleOptions()
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleOptions = rememberMapStyleOptions(isDarkTheme = isDarkTheme)
     val mapProperties = remember(mapStyleOptions) {
         MapProperties(mapStyleOptions = mapStyleOptions)
     }
@@ -41,6 +44,12 @@ fun MapWithClustering(
     GoogleMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
+        // Match the dark style's base color so the map doesn't flash white before tiles load
+        googleMapOptionsFactory = {
+            GoogleMapOptions().apply {
+                if (isDarkTheme) backgroundColor(0xFF242F3E.toInt())
+            }
+        },
         properties = mapProperties
     ) {
         Clustering(

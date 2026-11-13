@@ -5,12 +5,19 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import app.reportamelo.communityIssues.R
 
 val LoraFontFamily = FontFamily(
     Font(R.font.lora, FontWeight.Normal),
+    // Lora.ttf is a variable font, the weight axis has to be requested explicitly
+    Font(
+        R.font.lora,
+        FontWeight.Medium,
+        variationSettings = FontVariation.Settings(FontVariation.weight(FontWeight.Medium.weight))
+    ),
     Font(R.font.lora_italic, FontWeight.Normal, FontStyle.Italic)
 )
 

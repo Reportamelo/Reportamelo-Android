@@ -44,6 +44,7 @@ import app.reportamelo.commons.AttachmentType
 import app.reportamelo.communityIssues.R
 import app.reportamelo.models.Attachment
 import coil.compose.AsyncImage
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBackground
 
 @Composable
 fun AttachmentDetailView(
@@ -78,7 +79,7 @@ fun AttachmentDetailView(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .toolbarButtonBackground()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -216,7 +217,7 @@ fun AttachmentDetailView(
         } else {
             AsyncImage(
                 model = url,
-                contentDescription = "Attachment Image",
+                contentDescription = stringResource(R.string.attachment_image),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )

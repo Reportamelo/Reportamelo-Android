@@ -1,6 +1,7 @@
 package app.reportamelo.communityIssues
 
 import android.os.Bundle
+import android.content.Context
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,12 +14,17 @@ import app.reportamelo.communityIssues.ui.screens.WelcomeView
 import app.reportamelo.commons.AppPreferences
 import app.reportamelo.commons.NetworkMonitor
 import app.reportamelo.communityIssues.datamodel.SettingsStore
+import app.reportamelo.communityIssues.helpers.AppLanguageManager
 import app.reportamelo.communityIssues.helpers.AppNotificationManager
 import app.reportamelo.communityIssues.helpers.DeepLinkRouter
 import app.reportamelo.network.KeychainService
 import app.reportamelo.services.SubscriptionManager
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguageManager.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppPreferences.init(applicationContext)

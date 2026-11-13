@@ -29,12 +29,14 @@ import app.reportamelo.communityIssues.ui.components.CommentRow
 import app.reportamelo.communityIssues.ui.components.LoadingView
 import app.reportamelo.communityIssues.ui.theme.LightCardBackground
 import app.reportamelo.communityIssues.ui.theme.radialGradientBackground
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsSubView(
     modifier: Modifier = Modifier,
-    subViewName: String = "My Comments",
+    subViewName: String = stringResource(R.string.my_comments),
     mode: ViewOptions = ViewOptions.LIST,
     viewModel: MyCommentsViewModel = viewModel(),
     onBack: (() -> Unit)? = null
@@ -85,7 +87,7 @@ fun CommentsSubView(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(26.dp)
                             )
@@ -144,14 +146,14 @@ fun CommentsSubView(
                         }
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "No comments yet.",
+                            text = stringResource(R.string.no_comments_yet),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Please tell us how that problem affects you.",
+                            text = stringResource(R.string.please_tell_us_how_that_problem_affects_you_text),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF8E8E93),
                             textAlign = TextAlign.Center
@@ -200,7 +202,7 @@ fun CommentsSubView(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
+                                            contentDescription = stringResource(R.string.delete),
                                             tint = MaterialTheme.colorScheme.onError
                                         )
                                     }

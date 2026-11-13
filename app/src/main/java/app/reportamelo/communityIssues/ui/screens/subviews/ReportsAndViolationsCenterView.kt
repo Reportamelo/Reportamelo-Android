@@ -58,6 +58,9 @@ import app.reportamelo.repository.UserRepository
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 private val SecondarySubtitleColor = Color(0xFF8E8E93)
 
@@ -90,8 +93,8 @@ internal fun disableButtonByStatus(status: ReportViolationStatus): Boolean {
 }
 
 internal fun formatViolationDate(dateString: String?): String {
-    if (dateString.isNullOrBlank()) return "Unknown"
-    val parsed = parsePostgresDate(dateString) ?: return "Unknown"
+    if (dateString.isNullOrBlank()) return localized(R.string.unknown, "Unknown")
+    val parsed = parsePostgresDate(dateString) ?: return localized(R.string.unknown, "Unknown")
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
     return parsed.format(formatter)
 }
@@ -141,8 +144,8 @@ fun ReportsAndViolationsCenterView(
     if (showAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissAlert() },
-            title = { Text("Do you want to appeal for removal") },
-            text = { Text("Are you sure you want to appeal for removal of this report?") },
+            title = { Text(stringResource(R.string.do_you_want_to_appeal_for_removal)) },
+            text = { Text(stringResource(R.string.are_you_sure_you_want_to_appeal_for_removal_of_this_report_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -153,12 +156,12 @@ fun ReportsAndViolationsCenterView(
                         }
                     }
                 ) {
-                    Text("Yes, remove")
+                    Text(stringResource(R.string.yes_remove))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissAlert() }) {
-                    Text("No, cancel")
+                    Text(stringResource(R.string.no_cancel))
                 }
             }
         )
@@ -167,8 +170,8 @@ fun ReportsAndViolationsCenterView(
     if (showReportRemovalAlert) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissReportRemovalAlert() },
-            title = { Text("Moderation report") },
-            text = { Text("Are you sure you want to remove this moderation report?") },
+            title = { Text(stringResource(R.string.moderation_report)) },
+            text = { Text(stringResource(R.string.are_you_sure_you_want_to_remove_this_moderation_report)) },
             confirmButton = {
                 TextButton(
                     modifier = Modifier.semantics {
@@ -186,12 +189,12 @@ fun ReportsAndViolationsCenterView(
                         }
                     }
                 ) {
-                    Text("Yes, remove")
+                    Text(stringResource(R.string.yes_remove))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissReportRemovalAlert() }) {
-                    Text("No, cancel")
+                    Text(stringResource(R.string.no_cancel))
                 }
             }
         )
@@ -200,11 +203,11 @@ fun ReportsAndViolationsCenterView(
     if (showConfirmationOfRemoval) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissConfirmationOfRemoval() },
-            title = { Text("Moderation report") },
-            text = { Text("Your report has been removed.") },
+            title = { Text(stringResource(R.string.moderation_report)) },
+            text = { Text(stringResource(R.string.your_report_has_been_removed)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissConfirmationOfRemoval() }) {
-                    Text("Close")
+                    Text(stringResource(R.string.close))
                 }
             }
         )
@@ -248,7 +251,7 @@ fun ReportsAndViolationsCenterView(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(26.dp)
                             )
@@ -257,7 +260,7 @@ fun ReportsAndViolationsCenterView(
                 }
 
                 Text(
-                    text = "Reports and violations center",
+                    text = stringResource(R.string.reports_and_violations_center),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp
@@ -275,7 +278,7 @@ fun ReportsAndViolationsCenterView(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Find information related with your content such as images, comments, reports, and petitions that violate our Community Guidelines. If you believe your we've mistakenly taken action , you can submit an appeal to have the action reversed.",
+                    text = stringResource(R.string.find_information_related_with_your_content_such_as_images_comments_reports_and_petitions_that_violate_our_community_guidelines_if_you_believe_your_we_ve_mistakenly_taken_action_you_can_submit_an_appeal_to_have_the_action_reversed),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 13.sp,
                         lineHeight = 18.sp
@@ -301,14 +304,14 @@ fun ReportsAndViolationsCenterView(
             ) {
                 ModerationTabButton(
                     modifier = Modifier.weight(1f),
-                    title = "Your account",
+                    title = stringResource(R.string.your_account),
                     selected = selectedTab == 0,
                     onClick = { viewModel.selectTab(0) }
                 )
 
                 ModerationTabButton(
                     modifier = Modifier.weight(1f),
-                    title = "Your reports",
+                    title = stringResource(R.string.your_reports),
                     selected = selectedTab == 1,
                     onClick = { viewModel.selectTab(1) }
                 )
@@ -342,8 +345,8 @@ fun ReportsAndViolationsCenterView(
                     // Your account
                     if (indictedModeratedContent.isEmpty()) {
                         EmptyStateView(
-                            title = "No violations yet.",
-                            description = "Your account is in good standing.",
+                            title = stringResource(R.string.no_violations_yet),
+                            description = stringResource(R.string.your_account_is_in_good_standing),
                             iconContent = { CheckmarkShieldIcon() }
                         )
                     } else {
@@ -379,7 +382,7 @@ fun ReportsAndViolationsCenterView(
                                             clipboard?.setPrimaryClip(ClipData.newPlainText("Moderation ID", id))
                                             coroutineScope.launch {
                                                 toastState.show(
-                                                    message = "Moderation ID copied to clipboard",
+                                                    message = localized(R.string.moderation_id_copied_to_clipboard, "Moderation ID copied to clipboard"),
                                                     type = ToastType.Info
                                                 )
                                             }
@@ -394,8 +397,8 @@ fun ReportsAndViolationsCenterView(
                     // Your reports
                     if (myComplaints.isEmpty()) {
                         EmptyStateView(
-                            title = "No reports yet.",
-                            description = "You have not submitted any reports.",
+                            title = stringResource(R.string.no_reports_yet),
+                            description = stringResource(R.string.you_have_not_submitted_any_reports),
                             iconContent = { InfoBubbleIcon() }
                         )
                     } else {
@@ -670,7 +673,7 @@ fun ViolationRow(
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Content type: ")
+                        append(stringResource(R.string.content_type_label) + " ")
                     }
                     append(type.description)
                 },
@@ -687,7 +690,7 @@ fun ViolationRow(
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreHoriz,
-                        contentDescription = "More options",
+                        contentDescription = stringResource(R.string.more_options),
                         tint = if (role == ModerationRole.USER && !isOwnProfile) {
                             Color.Gray
                         } else {
@@ -703,7 +706,7 @@ fun ViolationRow(
                     if (role == ModerationRole.USER) {
                         val appealDisabled = !isOwnProfile || disableButtonByStatus(status)
                         DropdownMenuItem(
-                            text = { Text("Appeal") },
+                            text = { Text(stringResource(R.string.appeal)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Outlined.NoteAdd,
@@ -717,7 +720,7 @@ fun ViolationRow(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Copy ID") },
+                            text = { Text(stringResource(R.string.copy_id)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Outlined.ContentCopy,
@@ -732,7 +735,7 @@ fun ViolationRow(
                     } else {
                         if (type == TypeOfContentToReport.ACCOUNT) {
                             DropdownMenuItem(
-                                text = { Text("Unlock user") },
+                                text = { Text(stringResource(R.string.unlock_user)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.LockOpen,
@@ -746,7 +749,7 @@ fun ViolationRow(
                             )
                         } else {
                             DropdownMenuItem(
-                                text = { Text("Remove from moderation") },
+                                text = { Text(stringResource(R.string.remove_from_moderation)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.Delete,
@@ -773,7 +776,7 @@ fun ViolationRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Status",
+                    text = stringResource(R.string.status),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -790,7 +793,7 @@ fun ViolationRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Violation",
+                    text = stringResource(R.string.violation),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -807,7 +810,7 @@ fun ViolationRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Last updated",
+                    text = stringResource(R.string.last_updated),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -824,7 +827,7 @@ fun ViolationRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Observations",
+                    text = stringResource(R.string.observations),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -841,7 +844,7 @@ fun ViolationRow(
                     )
                 } else {
                     Text(
-                        text = "None",
+                        text = stringResource(R.string.none),
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,

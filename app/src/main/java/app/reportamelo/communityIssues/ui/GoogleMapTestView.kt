@@ -1,10 +1,12 @@
 package app.reportamelo.communityIssues.ui
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -22,7 +24,8 @@ fun GoogleMapTestView(
         position = CameraPosition.fromLatLngZoom(elSalvador, 10f)
     }
 
-    val mapStyleOptions = rememberMapStyleOptions()
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleOptions = rememberMapStyleOptions(isDarkTheme = isDarkTheme)
     val mapProperties = remember(mapStyleOptions) {
         MapProperties(mapStyleOptions = mapStyleOptions)
     }
@@ -30,6 +33,12 @@ fun GoogleMapTestView(
     GoogleMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
+        // Match the dark style's base color so the map doesn't flash white before tiles load
+        googleMapOptionsFactory = {
+            GoogleMapOptions().apply {
+                if (isDarkTheme) backgroundColor(0xFF242F3E.toInt())
+            }
+        },
         properties = mapProperties
     ) {
         Marker(

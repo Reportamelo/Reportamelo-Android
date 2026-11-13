@@ -51,6 +51,9 @@ import app.reportamelo.commons.CommentForType
 import app.reportamelo.communityIssues.R
 import app.reportamelo.communityIssues.controllers.CommentsViewModel
 import app.reportamelo.communityIssues.ui.components.CommentRow
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBackground
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonBorder
+import app.reportamelo.communityIssues.ui.theme.toolbarButtonColor
 
 @Composable
 fun CommentsSectionView(
@@ -94,11 +97,11 @@ fun CommentsSectionView(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                        .toolbarButtonBackground()
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -109,7 +112,7 @@ fun CommentsSectionView(
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                            .toolbarButtonBackground()
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -245,7 +248,8 @@ fun CommentsSectionView(
 
             Surface(
                 shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                color = toolbarButtonColor(),
+                border = toolbarButtonBorder(),
                 modifier = Modifier.height(52.dp)
             ) {
                 IconButton(
@@ -255,7 +259,7 @@ fun CommentsSectionView(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
+                        contentDescription = stringResource(R.string.send),
                         tint = if (state.commentInput.isNotBlank() && !state.disableInput) {
                             MaterialTheme.colorScheme.onSurface
                         } else {

@@ -36,6 +36,8 @@ import app.reportamelo.models.DaySummary
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @Composable
 fun InsightsCalendarView(
@@ -83,7 +85,7 @@ fun SimpleView(
                     dateFormatter,
                     DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US)
                 )
-                parsed.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH))
+                parsed.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault()))
             } catch (_: Exception) {
                 dateFormatter
             }
@@ -91,7 +93,7 @@ fun SimpleView(
     }
 
     val dynamicTitle = if (title == "NoActivityView") {
-        "No Activity"
+        stringResource(R.string.no_activity)
     } else if (localizedDateString.isNotEmpty()) {
         localizedDateString
     } else {
@@ -149,7 +151,7 @@ fun SimpleView(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(26.dp)
                             )
@@ -182,7 +184,7 @@ fun SimpleView(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No activity",
+                        text = stringResource(R.string.no_activity),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
@@ -190,7 +192,7 @@ fun SimpleView(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "You didn't create any reports on this day.",
+                        text = stringResource(R.string.you_didn_t_create_any_reports_on_this_day),
                         fontSize = 17.sp,
                         lineHeight = 22.sp,
                         fontWeight = FontWeight.Normal,
@@ -211,7 +213,7 @@ fun SimpleView(
                 ) {
                     // Section 1: Reports
                     item {
-                        ActivitySectionHeader(title = "Reports")
+                        ActivitySectionHeader(title = stringResource(R.string.reports))
                         if (selectedDay.reports.isNotEmpty()) {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 selectedDay.reports.forEach { report ->
@@ -240,7 +242,7 @@ fun SimpleView(
                             }
                         } else {
                             EmptyActivitySectionCard(
-                                text = "No reports available",
+                                text = stringResource(R.string.no_reports_available),
                                 cardBackground = cardBackground
                             )
                         }
@@ -248,7 +250,7 @@ fun SimpleView(
 
                     // Section 2: Signatures
                     item {
-                        ActivitySectionHeader(title = "Signatures")
+                        ActivitySectionHeader(title = stringResource(R.string.signatures))
                         if (selectedDay.signatures.isNotEmpty()) {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 selectedDay.signatures.forEach { signature ->
@@ -277,7 +279,7 @@ fun SimpleView(
                             }
                         } else {
                             EmptyActivitySectionCard(
-                                text = "No signatures available",
+                                text = stringResource(R.string.no_signatures_available),
                                 cardBackground = cardBackground
                             )
                         }
@@ -285,7 +287,7 @@ fun SimpleView(
 
                     // Section 3: Petitions
                     item {
-                        ActivitySectionHeader(title = "Petitions")
+                        ActivitySectionHeader(title = stringResource(R.string.petitions))
                         if (selectedDay.petitions.isNotEmpty()) {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 selectedDay.petitions.forEach { petition ->
@@ -313,7 +315,7 @@ fun SimpleView(
                             }
                         } else {
                             EmptyActivitySectionCard(
-                                text = "No petitions available",
+                                text = stringResource(R.string.no_petitions_available),
                                 cardBackground = cardBackground
                             )
                         }
@@ -321,7 +323,7 @@ fun SimpleView(
 
                     // Section 4: Comments
                     item {
-                        ActivitySectionHeader(title = "Comments")
+                        ActivitySectionHeader(title = stringResource(R.string.comments))
                         if (selectedDay.comments.isNotEmpty()) {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 selectedDay.comments.forEach { comment ->
@@ -349,7 +351,7 @@ fun SimpleView(
                             }
                         } else {
                             EmptyActivitySectionCard(
-                                text = "No comments available",
+                                text = stringResource(R.string.no_comments_available),
                                 cardBackground = cardBackground
                             )
                         }

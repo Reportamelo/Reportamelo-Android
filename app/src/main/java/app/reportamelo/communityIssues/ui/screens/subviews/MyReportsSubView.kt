@@ -38,6 +38,9 @@ import app.reportamelo.communityIssues.ui.theme.DarkInputText
 import app.reportamelo.communityIssues.ui.theme.LightCardBackground
 import app.reportamelo.communityIssues.ui.theme.LightInputText
 import app.reportamelo.communityIssues.ui.theme.radialGradientBackground
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
+import app.reportamelo.communityIssues.R
 
 val IssueTypes.color: Color
     get() = when (this) {
@@ -71,6 +74,20 @@ val Severity.iconName: String
         Severity.LOW -> "dial.low"
         Severity.MEDIUM -> "dial.medium"
         Severity.HIGH -> "dial.high"
+    }
+
+val IssueStatus.titleRes: Int
+    @StringRes get() = when (this) {
+        IssueStatus.REPORTED -> R.string.reported
+        IssueStatus.CONFIRMED -> R.string.confirmed
+        IssueStatus.IN_PROGRESS -> R.string.in_progress
+        IssueStatus.PETITION_TO_SIGN -> R.string.petition_to_sign
+        IssueStatus.FIXED -> R.string.fixed
+        IssueStatus.ASSIGNED -> R.string.assigned
+        IssueStatus.REJECTED -> R.string.rejected
+        IssueStatus.RECTIFICATION -> R.string.rectification
+        IssueStatus.HUMAN_REVIEW -> R.string.human_review
+        IssueStatus.UNDER_REVIEW -> R.string.under_review
     }
 
 val IssueStatus.color: Color
@@ -464,17 +481,17 @@ fun ReportCellView(
             ) {
                 GenericDatePresenterView(
                     modifier = Modifier.weight(1f),
-                    text = "Created",
+                    text = stringResource(R.string.created),
                     `when` = report.createdDate
                 )
                 GenericDatePresenterView(
                     modifier = Modifier.weight(1f),
-                    text = "Updated",
+                    text = stringResource(R.string.updated),
                     `when` = report.updatedDate
                 )
                 GenericDatePresenterView(
                     modifier = Modifier.weight(1f),
-                    text = "Assigned",
+                    text = stringResource(R.string.assigned),
                     `when` = report.reportedDate
                 )
             }
@@ -487,7 +504,7 @@ fun ReportCellView(
                             .padding(start = 12.dp, top = 10.dp, bottom = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        HeaderText(text = "Observations")
+                        HeaderText(text = stringResource(R.string.observations))
                         BottomText(text = obs, multiline = true)
                     }
                 }
@@ -504,7 +521,7 @@ fun ReportCellView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    HeaderText(text = "Issue type")
+                    HeaderText(text = stringResource(R.string.issue_type))
                     CustomBadgeView(
                         title = report.issueType.title,
                         color = report.issueType.color,
@@ -516,7 +533,7 @@ fun ReportCellView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    HeaderText(text = "Severity")
+                    HeaderText(text = stringResource(R.string.severity))
                     CustomBadgeView(
                         title = report.severity.title,
                         color = report.severity.color,
@@ -528,9 +545,9 @@ fun ReportCellView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    HeaderText(text = "Status")
+                    HeaderText(text = stringResource(R.string.status))
                     CustomBadgeView(
-                        title = report.status.title,
+                        title = stringResource(report.status.titleRes),
                         color = report.status.color,
                         iconName = report.status.iconName
                     )
@@ -554,7 +571,7 @@ fun ReportCellView(
 @Composable
 fun MyReportsSubView(
     modifier: Modifier = Modifier,
-    subViewName: String = "My Reports",
+    subViewName: String = stringResource(R.string.my_reports),
     mode: ViewOptions = ViewOptions.LIST,
     viewModel: MyReportsViewModel = viewModel(),
     onBack: (() -> Unit)? = null
@@ -607,7 +624,7 @@ fun MyReportsSubView(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(26.dp)
                             )
@@ -653,14 +670,14 @@ fun MyReportsSubView(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "No reports yet.",
+                            text = stringResource(R.string.no_reports_yet),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Please send us reports.",
+                            text = stringResource(R.string.please_send_us_reports),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF8E8E93),
                             textAlign = TextAlign.Center

@@ -14,6 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 data class License(val id: String = UUID.randomUUID().toString(), val library: String, val text: String)
 
@@ -21,7 +24,7 @@ data class License(val id: String = UUID.randomUUID().toString(), val library: S
 @Composable
 fun LicensesSubView(
     modifier: Modifier = Modifier,
-    subViewName: String = "Licenses",
+    subViewName: String = stringResource(R.string.licenses),
     onBack: (() -> Unit)? = null
 ) {
     var expandedLicenseIDs by remember { mutableStateOf(setOf<String>()) }
@@ -29,12 +32,12 @@ fun LicensesSubView(
     
     val licenses = remember {
         listOf(
-            License(library = "Google SignIn", text = "License text not available."),
-            License(library = "Libwebp", text = "License text not available."),
-            License(library = "Promises", text = "License text not available."),
-            License(library = "WebP", text = "License text not available."),
-            License(library = "AppAuth", text = "License text not available."),
-            License(library = "Photos from Unsplash", text = "License text not available.")
+            License(library = "Google SignIn", text = localized(R.string.license_text_not_available, "License text not available.")),
+            License(library = "Libwebp", text = localized(R.string.license_text_not_available, "License text not available.")),
+            License(library = "Promises", text = localized(R.string.license_text_not_available, "License text not available.")),
+            License(library = "WebP", text = localized(R.string.license_text_not_available, "License text not available.")),
+            License(library = "AppAuth", text = localized(R.string.license_text_not_available, "License text not available.")),
+            License(library = "Photos from Unsplash", text = localized(R.string.license_text_not_available, "License text not available."))
         )
     }
 
@@ -60,7 +63,7 @@ fun LicensesSubView(
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
                     }
@@ -69,7 +72,7 @@ fun LicensesSubView(
                     IconButton(onClick = { expandAll = !expandAll }) {
                         Icon(
                             imageVector = if (expandAll) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
-                            contentDescription = "Expand/Collapse All"
+                            contentDescription = stringResource(R.string.expand_collapse_all)
                         )
                     }
                 }
@@ -100,7 +103,7 @@ fun LicensesSubView(
                     ) {
                         Text(license.library, modifier = Modifier.weight(1f))
                         Text(
-                            text = if (isExpanded) "hide" else "show",
+                            text = if (isExpanded) stringResource(R.string.hide) else stringResource(R.string.show),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodySmall
                         )

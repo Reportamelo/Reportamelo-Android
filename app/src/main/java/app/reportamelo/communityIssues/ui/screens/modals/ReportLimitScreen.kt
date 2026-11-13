@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.reportamelo.communityIssues.controllers.InteractionType
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +32,7 @@ fun ReportLimitScreen(
                 title = { },
                 actions = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 }
             )
@@ -50,7 +52,7 @@ fun ReportLimitScreen(
                             containerColor = MaterialTheme.colorScheme.secondary
                         )
                     ) {
-                        Text("Subscribe")
+                        Text(stringResource(R.string.subscribe))
                     }
                 }
 
@@ -65,7 +67,7 @@ fun ReportLimitScreen(
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("View an Ad")
+                        Text(stringResource(R.string.view_an_ad))
                     }
                 }
 
@@ -75,7 +77,7 @@ fun ReportLimitScreen(
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("No, Thanks")
+                    Text(stringResource(R.string.no_thanks))
                 }
             }
         }
@@ -98,13 +100,13 @@ fun ReportLimitScreen(
             )
             
             Text(
-                text = "You have reached your free limit!",
+                text = stringResource(R.string.you_have_reached_your_free_limit),
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center
             )
             
             Text(
-                text = "Thank you for using our App, you have reached the free limit for this month but you can choose to see an ad or pay a monthly subscription.",
+                text = stringResource(R.string.thank_you_for_using_our_app_you_have_reached_the_free_limit_for_this_month_but_you_can_choose_to_see_an_ad_or_pay_a_monthly_subscription),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

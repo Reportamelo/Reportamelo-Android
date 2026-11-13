@@ -16,6 +16,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.Date
+import app.reportamelo.communityIssues.helpers.localized
 
 // Stubs for missing models
 
@@ -93,8 +94,8 @@ data class MatterToSolve(
 val mattersToResolve: List<MatterToSolve> = listOf(
     MatterToSolve(
         id = 1,
-        title = "Potholes",
-        description = "dangerous potholes that cause problems",
+        title = localized(R.string.potholes, "Potholes"),
+        description = localized(R.string.dangerous_potholes_that_cause_problems, "dangerous potholes that cause problems"),
         issueType = IssueTypes.ROAD,
         severity = Severity.LOW,
         image = "matt-hoffman-MQjJHTT-diQ-unsplash",
@@ -104,8 +105,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 2,
-        title = "Water leakage",
-        description = "Water leakage in the street or public spaces",
+        title = localized(R.string.water_leakage, "Water leakage"),
+        description = localized(R.string.water_leakage_in_the_street_or_public_spaces, "Water leakage in the street or public spaces"),
         issueType = IssueTypes.BUILDING,
         severity = Severity.HIGH,
         image = "arun-prakash-p0_6IwEjK98-unsplash",
@@ -115,7 +116,7 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 3,
-        title = "Street sign",
+        title = localized(R.string.street_sign, "Street sign"),
         description = "Missing street sign, damaged, or request to place one",
         issueType = IssueTypes.ROAD,
         severity = Severity.LOW,
@@ -126,8 +127,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 4,
-        title = "Trafic light",
-        description = "damaged traffic lights, traffic lights that don't work well",
+        title = localized(R.string.trafic_light, "Trafic light"),
+        description = localized(R.string.damaged_traffic_lights_traffic_lights_that_don_t_work_well, "damaged traffic lights, traffic lights that don't work well"),
         issueType = IssueTypes.BUILDING,
         severity = Severity.HIGH,
         image = "eliobed-suarez-PN-YnI5stdQ-unsplash",
@@ -137,8 +138,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 5,
-        title = "Lamp",
-        description = "Burned lamps, missing or request to install or replace",
+        title = localized(R.string.lamp, "Lamp"),
+        description = localized(R.string.burned_lamps_missing_or_request_to_install_or_replace, "Burned lamps, missing or request to install or replace"),
         issueType = IssueTypes.BUILDING,
         severity = Severity.LOW,
         image = "mukesh-naik-PZK-dEVBF9g-unsplash",
@@ -148,8 +149,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 6,
-        title = "Fallen trees",
-        description = "Fallen trees in the middle of the street, ",
+        title = localized(R.string.fallen_trees, "Fallen trees"),
+        description = localized(R.string.fallen_trees_in_the_middle_of_the_street, "Fallen trees in the middle of the street, "),
         issueType = IssueTypes.BUILDING,
         severity = Severity.MEDIUM,
         image = "john-cameron-EVhuJCqYLxM-unsplash",
@@ -159,8 +160,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 7,
-        title = "Flood",
-        description = "Flood",
+        title = localized(R.string.flood, "Flood"),
+        description = localized(R.string.flood, "Flood"),
         issueType = IssueTypes.PUBLIC_SPACE,
         severity = Severity.HIGH,
         image = "phillip-flores-38wqGW802RM-unsplash",
@@ -170,8 +171,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 8,
-        title = "Waste Management",
-        description = "problems with waste management",
+        title = localized(R.string.waste_management, "Waste Management"),
+        description = localized(R.string.problems_with_waste_management, "problems with waste management"),
         issueType = IssueTypes.PUBLIC_SPACE,
         severity = Severity.LOW,
         image = "pixel-shot-kxTwgF_uHow-unsplash",
@@ -190,8 +191,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 9,
-        title = "Animal abuse",
-        description = "Animal abuse, animal cruelty",
+        title = localized(R.string.animal_abuse, "Animal abuse"),
+        description = localized(R.string.animal_abuse_animal_cruelty, "Animal abuse, animal cruelty"),
         issueType = IssueTypes.OTHER,
         severity = Severity.HIGH,
         image = "thebugadi-y7YP97DLqWU-unsplash",
@@ -201,8 +202,8 @@ val mattersToResolve: List<MatterToSolve> = listOf(
     ),
     MatterToSolve(
         id = 10,
-        title = "Lid sewer",
-        description = "Missing lid sewer",
+        title = localized(R.string.lid_sewer, "Lid sewer"),
+        description = localized(R.string.missing_lid_sewer, "Missing lid sewer"),
         issueType = IssueTypes.ROAD,
         severity = Severity.MEDIUM,
         image = "zoshua-colah-XiJZ4r76Uik-unsplash",
@@ -323,10 +324,10 @@ class ReportDataModel private constructor() : ViewModel() {
     private val _isDifferentLocation = MutableStateFlow(false)
     val isDifferentLocation: StateFlow<Boolean> = _isDifferentLocation.asStateFlow()
 
-    private val _titlePlaceholder = MutableStateFlow("e.g. Street Repair")
+    private val _titlePlaceholder = MutableStateFlow(localized(R.string.e_g_street_repair, "e.g. Street Repair"))
     val titlePlaceholder: StateFlow<String> = _titlePlaceholder.asStateFlow()
 
-    private val _descriptionPlaceholder = MutableStateFlow("e.g. Street is blocked")
+    private val _descriptionPlaceholder = MutableStateFlow(localized(R.string.e_g_street_is_blocked, "e.g. Street is blocked"))
     val descriptionPlaceholder: StateFlow<String> = _descriptionPlaceholder.asStateFlow()
 
     private val _isLoadingAddress = MutableStateFlow(false)
@@ -778,8 +779,8 @@ val Report.createdDate: String
     get() = app.reportamelo.commons.utils.formatRelativeDate(this.createdAt)
 
 val Report.updatedDate: String
-    get() = this.updatedAt?.let { app.reportamelo.commons.utils.formatRelativeDate(it) } ?: "Not yet"
+    get() = this.updatedAt?.let { app.reportamelo.commons.utils.formatRelativeDate(it) } ?: localized(R.string.not_yet, "Not yet")
 
 val Report.reportedDate: String
-    get() = this.reportedAt?.let { app.reportamelo.commons.utils.formatRelativeDate(it) } ?: "Not yet"
+    get() = this.reportedAt?.let { app.reportamelo.commons.utils.formatRelativeDate(it) } ?: localized(R.string.not_yet, "Not yet")
 

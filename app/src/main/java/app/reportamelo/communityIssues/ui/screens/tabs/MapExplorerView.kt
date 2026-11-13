@@ -7,13 +7,23 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.StartOffsetType
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,12 +44,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import app.reportamelo.commons.IssueStatus
@@ -59,16 +76,20 @@ import app.reportamelo.communityIssues.ui.components.DetailView
 import app.reportamelo.communityIssues.ui.components.DetailsHeader
 import app.reportamelo.communityIssues.ui.components.SearchSuggestion
 import app.reportamelo.communityIssues.ui.components.SuggestionsResultList
-import app.reportamelo.communityIssues.ui.screens.animations.PulseRingView
 import app.reportamelo.communityIssues.ui.screens.modals.UserProfileScreen
+import app.reportamelo.communityIssues.ui.screens.subviews.color
+import app.reportamelo.communityIssues.ui.screens.subviews.titleRes
 import app.reportamelo.communityIssues.ui.theme.Dimensions
 import app.reportamelo.models.Coordinate
 import app.reportamelo.models.MapExplorerReport
 import app.reportamelo.services.SubscriptionManager
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraMoveStartedReason
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.GoogleMapComposable
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
@@ -78,6 +99,8 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 private val REPORT_ID_REGEX = Regex("^[a-zA-Z]{2}-[a-zA-Z]{2,3}-\\d{8}-[a-zA-Z0-9]{16}$")
 
@@ -218,6 +241,12 @@ fun MapExplorerView(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            // Match the dark style's base color so the map doesn't flash white before tiles load
+            googleMapOptionsFactory = {
+                GoogleMapOptions().apply {
+                    if (isDarkTheme) backgroundColor(0xFF242F3E.toInt())
+                }
+            },
             properties = mapProperties,
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = false,
@@ -227,20 +256,14 @@ fun MapExplorerView(
             contentPadding = PaddingValues(top = topMapPadding, start = 32.dp, bottom = 90.dp)
         ) {
             reports.forEach { report ->
-                val isSelected = report.id == selectedPlaceID
-                MarkerComposable(
-                    keys = arrayOf<Any>(report.id, isSelected, report.statusId, report.issueTypeId),
-                    state = MarkerState(position = LatLng(report.lat, report.lng)),
-                    title = report.title,
-                    onClick = {
-                        controller.setSelectedPlaceID(report.id)
-                        controller.setExpandedItem(report)
-                        true
-                    }
-                ) {
-                    ReportAnnotationView(
+                key(report.id) {
+                    ReportMarker(
                         report = report,
-                        isSelected = isSelected
+                        isSelected = report.id == selectedPlaceID,
+                        onClick = {
+                            controller.setExpandedItem(report)
+                            controller.setSelectedPlaceID(report.id)
+                        }
                     )
                 }
             }
@@ -254,6 +277,17 @@ fun MapExplorerView(
                     snippet = marker.description.ifEmpty { null }
                 )
             }
+        }
+
+        // Pulse of the selected report, drawn over the map (see PulseRingsOverlay)
+        reports.firstOrNull { it.id == selectedPlaceID }?.let { selectedReport ->
+            PulseRingsOverlay(
+                cameraPositionState = cameraPositionState,
+                center = LatLng(selectedReport.lat, selectedReport.lng),
+                tint = IssueStatus.fromIdentifier(selectedReport.statusId).color,
+                size = 80.dp,
+                markerSize = 50.dp
+            )
         }
 
         // Bottom gradient overlay matching iOS MapExplorerView.bottom
@@ -274,11 +308,15 @@ fun MapExplorerView(
                 .zIndex(30f),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Equivalent to iOS IssueStatus.title: the localized titles are resolved here
+            val searchTitles = searchItems.map { stringResource(it.titleRes) }
             CustomTabBar(
-                items = searchItems,
-                searchHint = "Reports, Petitions, Places...",
-                selection = selection,
-                onSelectionChange = { controller.updateSelection(it) },
+                items = searchTitles,
+                searchHint = stringResource(R.string.reports_petitions_places),
+                selection = selection?.let { stringResource(it.titleRes) } ?: "",
+                onSelectionChange = { title ->
+                    controller.updateSelection(searchItems.getOrNull(searchTitles.indexOf(title)))
+                },
                 searchText = searchText,
                 onSearchTextChange = { controller.updateSearchText(it) },
                 isSearchExpanded = isSearchExpanded,
@@ -444,8 +482,8 @@ fun MapExplorerView(
     if (showLocationAlert) {
         AlertDialog(
             onDismissRequest = { showLocationAlert = false },
-            title = { Text("Location Permission") },
-            text = { Text("Please enable location permissions in settings.") },
+            title = { Text(stringResource(R.string.location_permission)) },
+            text = { Text(stringResource(R.string.please_enable_location_permissions_in_settings)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -457,12 +495,12 @@ fun MapExplorerView(
                         context.startActivity(intent)
                     }
                 ) {
-                    Text("Settings")
+                    Text(stringResource(R.string.settings))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLocationAlert = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -491,23 +529,102 @@ private fun BottomMapGradient(
     )
 }
 
+// Equivalent to iOS MapExplorerView.annotationView(_:)
+@Composable
+@GoogleMapComposable
+private fun ReportMarker(
+    report: MapExplorerReport,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    // Equivalent to iOS .animation(.easeInOut(duration: 0.25), value: isSelected)
+    val selectionProgress by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = tween(durationMillis = 250, easing = EaseInOut),
+        label = "ReportMarkerSelection"
+    )
+    val position = remember(report.lat, report.lng) { LatLng(report.lat, report.lng) }
+    val markerState = remember(position) { MarkerState(position = position) }
+
+    // MarkerComposable rasterizes its content to a bitmap, so the animated progress
+    // is passed as a key to re-render the icon on every frame of the transition
+    MarkerComposable(
+        keys = arrayOf<Any>(report.id, selectionProgress, report.issueTypeId),
+        state = markerState,
+        anchor = Offset(0.5f, 0.5f),
+        zIndex = if (isSelected) 1f else 0f,
+        title = report.title,
+        onClick = {
+            onClick()
+            true
+        }
+    ) {
+        ReportAnnotationView(
+            report = report,
+            selectionProgress = selectionProgress
+        )
+    }
+}
+
+// Counterpart of iOS PulseRingView for map markers. A marker icon is a static bitmap and
+// animating map shapes forces the whole map to re-render every frame, so the rings are
+// drawn on a Compose canvas above the map, following the marker's screen position.
+// The animated values are only read in the draw phase: no recomposition per frame.
+@Composable
+private fun PulseRingsOverlay(
+    modifier: Modifier = Modifier,
+    cameraPositionState: CameraPositionState,
+    center: LatLng,
+    tint: Color,
+    size: Dp,
+    markerSize: Dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "PulseRingTransition")
+    val rings = List(3) { index ->
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2500, easing = EaseInOut),
+                repeatMode = RepeatMode.Restart,
+                initialStartOffset = StartOffset(index * 200, StartOffsetType.Delay)
+            ),
+            label = "PulseRingProgress"
+        )
+    }
+    val markerCutout = remember { Path() }
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        // Reading the position redraws the rings while the camera moves
+        cameraPositionState.position
+        val point = cameraPositionState.projection?.toScreenLocation(center) ?: return@Canvas
+        val ringCenter = Offset(point.x.toFloat(), point.y.toFloat())
+        val maxRadius = size.toPx()
+
+        // The canvas sits above the map, so cut the marker out to keep the rings behind it
+        markerCutout.reset()
+        markerCutout.addOval(Rect(center = ringCenter, radius = markerSize.toPx() / 2))
+
+        clipPath(markerCutout, clipOp = ClipOp.Difference) {
+            rings.forEach { ring ->
+                // scaleEffect 0 -> 2 over a ring of diameter `size`, opacity 0.4 -> 0
+                val progress = ring.value
+                drawCircle(
+                    color = tint.copy(alpha = 0.4f * (1f - progress)),
+                    radius = maxRadius * progress,
+                    center = ringCenter
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ReportAnnotationView(
     modifier: Modifier = Modifier,
     report: MapExplorerReport,
-    isSelected: Boolean
+    selectionProgress: Float
 ) {
-    val statusColor = remember(report.statusId) {
-        when (IssueStatus.fromIdentifier(report.statusId)) {
-            IssueStatus.CONFIRMED -> Color(0xFFE53935)
-            IssueStatus.IN_PROGRESS -> Color(0xFFFB8C00)
-            IssueStatus.FIXED -> Color(0xFF43A047)
-            IssueStatus.PETITION_TO_SIGN -> Color(0xFF1E88E5)
-            IssueStatus.ASSIGNED -> Color(0xFF8E24AA)
-            else -> Color(0xFF1E88E5)
-        }
-    }
-
     val iconVector: ImageVector = remember(report.issueTypeId) {
         when (IssueTypes.fromIdentifier(report.issueTypeId)) {
             IssueTypes.ROAD -> Icons.Default.Build
@@ -517,16 +634,13 @@ private fun ReportAnnotationView(
         }
     }
 
-    val circleSize = if (isSelected) 50.dp else 28.dp
-    val iconPadding = if (isSelected) 8.dp else 3.dp
+    val circleSize = lerp(28.dp, 50.dp, selectionProgress)
+    val iconPadding = lerp(3.dp, 8.dp, selectionProgress)
 
     Box(
         modifier = modifier.defaultMinSize(minWidth = 44.dp, minHeight = 44.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (isSelected) {
-            PulseRingView(tint = statusColor, size = 80.dp)
-        }
         Box(
             modifier = Modifier
                 .size(circleSize)
@@ -571,7 +685,7 @@ private fun ReportOverviewList(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Show more details",
+                text = stringResource(R.string.show_more_details),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 4.dp)
             )

@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +43,7 @@ fun CustomToolBar(
                     )
                 } else {
                     Text(
-                        text = "Petitions",
+                        text = stringResource(R.string.petitions),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1

@@ -12,12 +12,12 @@ import app.reportamelo.communityIssues.helpers.DeepLinkRouter
 import app.reportamelo.communityIssues.datamodel.AuthViewModel
 import app.reportamelo.communityIssues.datamodel.SettingsStore
 
-val LocalAuthViewModel = compositionLocalOf<AuthViewModel> { error("No AuthViewModel provided") }
-val LocalSettingsStore = compositionLocalOf<SettingsStore> { error("No SettingsStore provided") }
+val LocalAuthViewModel = compositionLocalOf<AuthViewModel> { AuthViewModel.shared }
+val LocalSettingsStore = compositionLocalOf<SettingsStore> { SettingsStore.shared }
 val LocalNetworkMonitor = compositionLocalOf<NetworkMonitor> { error("No NetworkMonitor provided") }
-val LocalSubscriptionManager = compositionLocalOf<SubscriptionManager> { error("No SubscriptionManager provided") }
-val LocalNotificationManager = compositionLocalOf<AppNotificationManager> { error("No NotificationManager provided") }
-val LocalDeepLinkRouter = compositionLocalOf<DeepLinkRouter> { error("No DeepLinkRouter provided") }
+val LocalSubscriptionManager = compositionLocalOf<SubscriptionManager> { SubscriptionManager }
+val LocalNotificationManager = compositionLocalOf<AppNotificationManager> { AppNotificationManager }
+val LocalDeepLinkRouter = compositionLocalOf<DeepLinkRouter> { DeepLinkRouter.shared }
 
 @Composable
 fun DependencyProvider(

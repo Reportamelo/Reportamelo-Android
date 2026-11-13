@@ -42,6 +42,8 @@ import app.reportamelo.communityIssues.ui.screens.subviews.ReportsAndViolationsC
 import app.reportamelo.communityIssues.ui.screens.subviews.SettingsSubView
 import app.reportamelo.repository.UserRepository
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.reportamelo.communityIssues.R
 
 enum class ProfileDestinations {
     SETTINGS, LICENSES, COMMENTS, REPORTS, MODERATION, SIGN_PETITIONS
@@ -109,7 +111,7 @@ fun UserProfileScreen(
             ProfileDestinations.REPORTS -> {
                 MyReportsSubView(
                     modifier = modifier,
-                    subViewName = "My Reports",
+                    subViewName = stringResource(R.string.my_reports),
                     mode = ViewOptions.LIST_AND_MODIFY,
                     onBack = { currentDestination = null }
                 )
@@ -117,7 +119,7 @@ fun UserProfileScreen(
             ProfileDestinations.COMMENTS -> {
                 CommentsSubView(
                     modifier = modifier,
-                    subViewName = "My Comments",
+                    subViewName = stringResource(R.string.my_comments),
                     mode = ViewOptions.LIST,
                     onBack = { currentDestination = null }
                 )
@@ -125,8 +127,14 @@ fun UserProfileScreen(
             ProfileDestinations.SETTINGS -> {
                 SettingsSubView(
                     modifier = modifier,
-                    subViewName = "Settings",
-                    onBack = { currentDestination = null }
+                    subViewName = stringResource(R.string.settings),
+                    onBack = { currentDestination = null },
+                    onAccountDeleted = {
+                        currentDestination = null
+                        landingViewModel.logout(authViewModel)
+                        landingViewModel.setAccountDeleted(true)
+                        onLogout?.invoke()
+                    }
                 )
             }
             ProfileDestinations.MODERATION -> {
@@ -138,7 +146,7 @@ fun UserProfileScreen(
             ProfileDestinations.LICENSES -> {
                 LicensesSubView(
                     modifier = modifier,
-                    subViewName = "Licenses",
+                    subViewName = stringResource(R.string.licenses),
                     onBack = { currentDestination = null }
                 )
             }
@@ -149,45 +157,43 @@ fun UserProfileScreen(
         return
     }
 
-    val options = remember {
-        listOf(
-            ProfileOption(
-                id = "op:reports",
-                title = "My Reports",
-                icon = Icons.Default.MarkChatUnread,
-                color = Color(0xFF007AFF),
-                destination = ProfileDestinations.REPORTS
-            ),
-            ProfileOption(
-                id = "op:comments",
-                title = "My Comments",
-                icon = Icons.Default.ChatBubble,
-                color = Color(0xFFFF9500),
-                destination = ProfileDestinations.COMMENTS
-            ),
-            ProfileOption(
-                id = "op:settings",
-                title = "Settings",
-                icon = Icons.Default.Settings,
-                color = Color(0xFF8E8E93),
-                destination = ProfileDestinations.SETTINGS
-            ),
-            ProfileOption(
-                id = "op:moderationCenter",
-                title = "Moderation Center",
-                icon = Icons.Default.HowToReg,
-                color = Color(0xFFFF3B30),
-                destination = ProfileDestinations.MODERATION
-            ),
-            ProfileOption(
-                id = "op:licenses",
-                title = "Licenses",
-                icon = Icons.Default.Description,
-                color = Color(0xFF34C759),
-                destination = ProfileDestinations.LICENSES
-            )
+    val options = listOf(
+        ProfileOption(
+            id = "op:reports",
+            title = stringResource(R.string.my_reports),
+            icon = Icons.Default.MarkChatUnread,
+            color = Color(0xFF007AFF),
+            destination = ProfileDestinations.REPORTS
+        ),
+        ProfileOption(
+            id = "op:comments",
+            title = stringResource(R.string.my_comments),
+            icon = Icons.Default.ChatBubble,
+            color = Color(0xFFFF9500),
+            destination = ProfileDestinations.COMMENTS
+        ),
+        ProfileOption(
+            id = "op:settings",
+            title = stringResource(R.string.settings),
+            icon = Icons.Default.Settings,
+            color = Color(0xFF8E8E93),
+            destination = ProfileDestinations.SETTINGS
+        ),
+        ProfileOption(
+            id = "op:moderationCenter",
+            title = stringResource(R.string.moderation_center),
+            icon = Icons.Default.HowToReg,
+            color = Color(0xFFFF3B30),
+            destination = ProfileDestinations.MODERATION
+        ),
+        ProfileOption(
+            id = "op:licenses",
+            title = stringResource(R.string.licenses),
+            icon = Icons.Default.Description,
+            color = Color(0xFF34C759),
+            destination = ProfileDestinations.LICENSES
         )
-    }
+    )
 
     val isDark = isSystemInDarkTheme()
     val baseBackgroundColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF6F6F8)
@@ -222,7 +228,7 @@ fun UserProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Profile",
+                    text = stringResource(R.string.profile),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -236,7 +242,7 @@ fun UserProfileScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close"
+                            contentDescription = stringResource(R.string.close)
                         )
                     }
                 }
@@ -337,7 +343,7 @@ fun UserProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ThemedButton(
-                    message = "Log Out",
+                    message = stringResource(R.string.log_out),
                     type = ThemedButtonType.OUTLINE,
                     style = ThemedButtonStyle.NORMAL,
                     isLoading = isLoading,
