@@ -30,6 +30,17 @@ object SubscriptionManager : UpdatedCustomerInfoListener {
 
     private var created: Boolean = false
 
+    // MARK: - Mocked subscription for testing purposes
+    /// When not null it overrides the RevenueCat entitlement, so flows that depend on
+    /// an active Reportamelo Pro subscription can be tested without a real purchase.
+    private var mockIsPro: Boolean? = null
+
+    fun setMockIsPro(value: Boolean?) {
+        mockIsPro = value
+        app.reportamelo.commons.utils.SubscriptionManager.mockIsPro = value == true
+        updateState(_customerInfo.value)
+    }
+
     fun init(context: Context) {
         val apiKey = getApiKey(context)
         if (apiKey.isNullOrEmpty()) {
@@ -59,7 +70,8 @@ object SubscriptionManager : UpdatedCustomerInfoListener {
 
     private fun updateState(customerInfo: CustomerInfo?) {
         _customerInfo.value = customerInfo
-        _isPro.value = customerInfo?.entitlements?.all?.get("Reportamelo Pro")?.isActive == true
+        _isPro.value = mockIsPro
+            ?: (customerInfo?.entitlements?.all?.get("Reportamelo Pro")?.isActive == true)
         setPlanType()
     }
 
