@@ -432,7 +432,7 @@
     <string name="state">Estado / Departamento</string>
     <string name="status">Estatus</string>
     <string name="status_update">Actualización del estado</string>
-    <string name="step_lld_of_lld">Paso %1$dde %2$d</string>
+    <string name="step_lld_of_lld">Paso %1$d de %2$d</string>
     <string name="step_lld_of_4">Paso %d de 4</string>
     <string name="street_sign">Señales de tráfico</string>
     <string name="submit">Enviar</string>
