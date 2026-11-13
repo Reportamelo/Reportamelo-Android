@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 enum class PetitionStep {
     DETAILS,
@@ -119,6 +121,6 @@ class PetitionViewModel : ViewModel() {
     }
 
     val buttonMessage: String
-        get() = if (_currentStep.value == PetitionStep.SIGNATURES) "Submit" else "Next"
+        get() = if (_currentStep.value == PetitionStep.SIGNATURES) localized(R.string.submit, "Submit") else localized(R.string.next, "Next")
 }
 

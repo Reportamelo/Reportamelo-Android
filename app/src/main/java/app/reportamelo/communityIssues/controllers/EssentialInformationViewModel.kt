@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.helpers.localized
 
 class EssentialInformationViewModel(
     private val modifyNotificationsProvider: suspend (Notifications) -> Result<String> = { UserRepository.shared.modify(it) },
@@ -40,7 +41,7 @@ class EssentialInformationViewModel(
     private val _isSavingNotifications = MutableStateFlow(false)
     val isSavingNotifications: StateFlow<Boolean> = _isSavingNotifications.asStateFlow()
 
-    private val _buttonMessage = MutableStateFlow("Configure my account")
+    private val _buttonMessage = MutableStateFlow(localized(R.string.configure_my_account, "Configure my account"))
     val buttonMessage: StateFlow<String> = _buttonMessage.asStateFlow()
 
     private val _buttonMessageRes = MutableStateFlow(R.string.configure_my_account)
@@ -174,7 +175,7 @@ class EssentialInformationViewModel(
     ) {
         viewModelScope.launch {
             _isLoading.value = true
-            _buttonMessage.value = "Saving my configuration"
+            _buttonMessage.value = localized(R.string.saving_my_configuration, "Saving my configuration")
             _buttonMessageRes.value = R.string.saving_my_configuration
 
             try {
@@ -182,15 +183,15 @@ class EssentialInformationViewModel(
                 initializeStats()
 
                 _isLoading.value = false
-                _buttonMessage.value = "Start reporting"
+                _buttonMessage.value = localized(R.string.start_reporting, "Start reporting")
                 _buttonMessageRes.value = R.string.start_reporting
                 finalStep()
             } catch (e: Exception) {
                 _isLoading.value = false
-                _buttonMessage.value = "Configure my account"
+                _buttonMessage.value = localized(R.string.configure_my_account, "Configure my account")
                 _buttonMessageRes.value = R.string.configure_my_account
                 _messageErrorRes.value = null
-                _messageError.value = "Failed to save configuration after $maxRetries attempts."
+                _messageError.value = localized(R.string.failed_to_save_configuration_after_d_attempts, "Failed to save configuration after %1\$d attempts.", maxRetries)
                 _showErrorAlert.value = true
             }
         }
@@ -209,7 +210,7 @@ class EssentialInformationViewModel(
                     }
                     return
                 }
-                lastError = IllegalStateException("Failed to save configuration after $maxRetries attempts.")
+                lastError = IllegalStateException(localized(R.string.failed_to_save_configuration_after_d_attempts, "Failed to save configuration after %1\$d attempts.", maxRetries))
                 currentRetry += 1
                 if (currentRetry < maxRetries && retryDelayMs > 0) {
                     delay(retryDelayMs * currentRetry)
@@ -223,11 +224,11 @@ class EssentialInformationViewModel(
             }
         }
 
-        throw lastError ?: IllegalStateException("Failed to save configuration after $maxRetries attempts.")
+        throw lastError ?: IllegalStateException(localized(R.string.failed_to_save_configuration_after_d_attempts, "Failed to save configuration after %1\$d attempts.", maxRetries))
     }
 
     private suspend fun initializeStats() {
-        _buttonMessage.value = "Initializing Insights"
+        _buttonMessage.value = localized(R.string.initializing_insights, "Initializing Insights")
         _buttonMessageRes.value = R.string.initializing_insights
 
         try {
@@ -247,23 +248,23 @@ class EssentialInformationViewModel(
         when (error) {
             is CommonIntercommunicationErrors.UnProcessable,
             is CommonIntercommunicationErrors.InvalidPetition -> {
-                _messageError.value = "Your petition cannot be processed, please try again."
+                _messageError.value = localized(R.string.your_petition_cannot_be_processed_please_try_again_text, "Your petition cannot be processed, please try again.")
                 _messageErrorRes.value = R.string.your_petition_cannot_be_processed_please_try_again
             }
             is CommonIntercommunicationErrors.NetworkError -> {
-                _messageError.value = "It looks like that your network is experiencing some delays, please try again."
+                _messageError.value = localized(R.string.it_looks_like_that_your_network_is_experiencing_some_delays_please_try, "It looks like that your network is experiencing some delays, please try again.")
                 _messageErrorRes.value = R.string.it_looks_like_that_your_network_is_experiencing_some_delays_please_try_again
             }
             is CommonIntercommunicationErrors.ServerError -> {
-                _messageError.value = "Server error, please try again."
+                _messageError.value = localized(R.string.server_error_please_try_again_text, "Server error, please try again.")
                 _messageErrorRes.value = R.string.server_error_please_try_again
             }
             is CommonIntercommunicationErrors -> {
-                _messageError.value = "An unexpected error has occurred, please try again."
+                _messageError.value = localized(R.string.an_unexpected_error_has_occurred_please_try_again_text, "An unexpected error has occurred, please try again.")
                 _messageErrorRes.value = R.string.an_unexpected_error_has_occurred_please_try_again
             }
             else -> {
-                _messageError.value = error.localizedMessage ?: error.message ?: "An unexpected error has occurred, please try again."
+                _messageError.value = error.localizedMessage ?: error.message ?: localized(R.string.an_unexpected_error_has_occurred_please_try_again_text, "An unexpected error has occurred, please try again.")
                 _messageErrorRes.value = null
             }
         }

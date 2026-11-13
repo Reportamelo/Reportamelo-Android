@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 sealed class InsightsNavigation {
     data object MyReports : InsightsNavigation()
@@ -45,7 +47,7 @@ class InsightsViewModel : ViewModel() {
                 val response = InsightsRepository.insightsForThisMonth()
                 _insights.value = response
             } catch (e: CommonIntercommunicationErrors.ServerError) {
-                showError("Server Error")
+                showError(localized(R.string.server_error, "Server Error"))
             } catch (e: Exception) {
                 // Ignore
             } finally {

@@ -6,6 +6,7 @@ import app.reportamelo.commons.AppPreferences
 import app.reportamelo.commons.CommonIntercommunicationErrors
 import app.reportamelo.commons.DeviceService
 import app.reportamelo.communityIssues.datamodel.SettingsStore
+import app.reportamelo.communityIssues.helpers.AppLanguageManager
 import app.reportamelo.communityIssues.helpers.AppNotificationManager
 import app.reportamelo.models.Coordinate
 import app.reportamelo.models.FriendlyCityDistribution
@@ -23,8 +24,23 @@ class SettingsSubViewModel(
     private val modifyNotificationsProvider: suspend (Notifications) -> Result<String> = { UserRepository.shared.modify(it) },
     private val sendDeviceProvider: suspend (String) -> Unit = { UserRepository.shared.sendDevice(it) },
     private val deleteAccountProvider: suspend () -> Unit = { UserRepository.shared.deleteMyAccount() },
-    private val refreshProvider: suspend () -> Unit = { UserRepository.shared.refresh() }
+    private val refreshProvider: suspend () -> Unit = { UserRepository.shared.refresh() },
+    private val currentLanguageProvider: () -> String = {
+        AppPreferences.appContext
+            ?.let { context -> runCatching { AppLanguageManager.currentLanguageTag(context) }.getOrNull() }
+            ?: AppLanguageManager.SYSTEM_DEFAULT
+    },
+    private val setLanguageProvider: (String) -> Unit = { languageTag ->
+        AppPreferences.appContext?.let { context -> AppLanguageManager.setLanguage(context, languageTag) }
+    }
 ) : ViewModel() {
+
+    /// Languages the user can choose from; the empty tag follows the system language
+    val supportedLanguages: List<String> =
+        listOf(AppLanguageManager.SYSTEM_DEFAULT) + AppLanguageManager.supportedLanguageTags
+
+    private val _selectedLanguage = MutableStateFlow(currentLanguageProvider())
+    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
     private val _showDeleteAlert = MutableStateFlow(false)
     val showDeleteAlert: StateFlow<Boolean> = _showDeleteAlert.asStateFlow()
@@ -172,15 +188,21 @@ class SettingsSubViewModel(
         }
     }
 
-    fun deleteAccount() {
+    fun deleteAccount(
+        onDeleted: () -> Unit = {},
+        onFailed: () -> Unit = {}
+    ) {
         viewModelScope.launch {
             _isDeletingAccount.value = true
             try {
                 deleteAccountProvider()
+                onDeleted()
             } catch (e: CommonIntercommunicationErrors.NetworkError) {
                 _showNetworkError.value = true
+                onFailed()
             } catch (e: Exception) {
                 println("Failed to delete account: ${e.message}")
+                onFailed()
             } finally {
                 _isDeletingAccount.value = false
             }
@@ -206,6 +228,14 @@ class SettingsSubViewModel(
 
     fun dismissDeleteAlert() {
         _showDeleteAlert.value = false
+    }
+
+    /// Returns true when the language actually changed
+    fun updateLanguage(languageTag: String): Boolean {
+        if (languageTag == _selectedLanguage.value || languageTag !in supportedLanguages) return false
+        setLanguageProvider(languageTag)
+        _selectedLanguage.value = languageTag
+        return true
     }
 
     fun dismissNetworkError() {

@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 enum class ModerationRole(val description: String) {
     MODERATOR("Moderator"),
@@ -170,12 +172,12 @@ class ModerationViewModel @JvmOverloads constructor(
             try {
                 appealProvider(id, type)
                 _toastMessage.value = ModerationToastMessage(
-                    message = "Your appeal has been sent",
+                    message = localized(R.string.your_appeal_has_been_sent, "Your appeal has been sent"),
                     type = ToastType.Success
                 )
             } catch (e: Exception) {
                 _toastMessage.value = ModerationToastMessage(
-                    message = e.localizedMessage ?: e.message ?: "Error",
+                    message = e.localizedMessage ?: e.message ?: localized(R.string.error, "Error"),
                     type = ToastType.Error
                 )
             }

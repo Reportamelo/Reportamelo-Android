@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 typealias OnTokenReceived = (AuthPayload, LoginType) -> Unit
 
@@ -82,10 +84,10 @@ class LoginViewModel(
                 onTokenReceived(AuthPayload(token = result.second), LoginType.Guest)
             } catch (e: Exception) {
                 when (e) {
-                    is CommonIntercommunicationErrors.UnProcessable -> showError("Your petition cannot be processed, please try again.")
-                    is CommonIntercommunicationErrors.NetworkError -> showError("It looks like that your network is experiencing some delays, please try again.")
-                    is CommonIntercommunicationErrors.ServerError -> showError("Server error, please try again.")
-                    else -> showError("An unexpected error has occurred, please try again.")
+                    is CommonIntercommunicationErrors.UnProcessable -> showError(localized(R.string.your_petition_cannot_be_processed_please_try_again_text, "Your petition cannot be processed, please try again."))
+                    is CommonIntercommunicationErrors.NetworkError -> showError(localized(R.string.it_looks_like_that_your_network_is_experiencing_some_delays_please_try, "It looks like that your network is experiencing some delays, please try again."))
+                    is CommonIntercommunicationErrors.ServerError -> showError(localized(R.string.server_error_please_try_again_text, "Server error, please try again."))
+                    else -> showError(localized(R.string.an_unexpected_error_has_occurred_please_try_again_text, "An unexpected error has occurred, please try again."))
                 }
             } finally {
                 setLoading(false)
@@ -102,14 +104,14 @@ class LoginViewModel(
                     onTokenReceived(AuthPayload(token = idToken), LoginType.User(AuthMethod.GOOGLE))
                 } else {
                     setLoading(false)
-                    showError("Could not retrieve Google ID token, please try again.")
+                    showError(localized(R.string.could_not_retrieve_google_id_token_please_try_again, "Could not retrieve Google ID token, please try again."))
                 }
             } catch (e: GetCredentialCancellationException) {
                 setLoading(false)
                 Log.e("LoginViewModel", "Google Sign-In cancelled", e)
             } catch (e: GetCredentialException) {
                 setLoading(false)
-                showError(e.message ?: "Google Sign-In could not be completed, please try again.")
+                showError(e.message ?: localized(R.string.google_sign_in_could_not_be_completed_please_try_again, "Google Sign-In could not be completed, please try again."))
             } catch (e: Exception) {
                 setLoading(false)
                 handleError(e)
@@ -121,7 +123,7 @@ class LoginViewModel(
     fun loginWithGoogle(idToken: String, onTokenReceived: OnTokenReceived) {
         viewModelScope.launch {
             if (idToken.isBlank()) {
-                showError("Could not retrieve Google ID token, please try again.")
+                showError(localized(R.string.could_not_retrieve_google_id_token_please_try_again, "Could not retrieve Google ID token, please try again."))
                 return@launch
             }
             setLoading(true)
@@ -197,6 +199,6 @@ class LoginViewModel(
     }
 
     fun handleError(error: Exception?) {
-        error?.let { showError(it.message ?: "Unknown error") }
+        error?.let { showError(it.message ?: localized(R.string.unknown_error, "Unknown error")) }
     }
 }

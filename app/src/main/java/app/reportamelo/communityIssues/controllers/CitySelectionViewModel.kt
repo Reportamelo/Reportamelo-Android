@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 class CitySelectionViewModel(
     private val countryCode: CountryCode = CountryCode.SV,
@@ -124,13 +126,13 @@ class CitySelectionViewModel(
                     }
                 }
             } catch (e: CommonIntercommunicationErrors.UnProcessable) {
-                showError("Your petition cannot be processed, please try again.")
+                showError(localized(R.string.your_petition_cannot_be_processed_please_try_again_text, "Your petition cannot be processed, please try again."))
             } catch (e: CommonIntercommunicationErrors.NetworkError) {
-                showError("It looks like that your network is experiencing some delays, please try again.")
+                showError(localized(R.string.it_looks_like_that_your_network_is_experiencing_some_delays_please_try, "It looks like that your network is experiencing some delays, please try again."))
             } catch (e: CommonIntercommunicationErrors.ServerError) {
-                showError("Server error, please try again.")
+                showError(localized(R.string.server_error_please_try_again_text, "Server error, please try again."))
             } catch (e: Exception) {
-                showError("An unexpected error has occurred, please try again.")
+                showError(localized(R.string.an_unexpected_error_has_occurred_please_try_again_text, "An unexpected error has occurred, please try again."))
             } finally {
                 _state.update { it.copy(isLoading = false) }
             }

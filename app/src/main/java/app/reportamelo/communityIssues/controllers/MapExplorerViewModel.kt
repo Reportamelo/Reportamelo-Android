@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 
 data class IssueMarker(
@@ -74,9 +76,9 @@ class MapExplorerViewModel : ViewModel() {
     private val _expandedItem = MutableStateFlow<MapExplorerReport?>(null)
     val expandedItem: StateFlow<MapExplorerReport?> = _expandedItem.asStateFlow()
 
-    private val _selection = MutableStateFlow("")
-    val selectionState: StateFlow<String> = _selection.asStateFlow()
-    var selection: String
+    private val _selection = MutableStateFlow<IssueStatus?>(null)
+    val selectionState: StateFlow<IssueStatus?> = _selection.asStateFlow()
+    var selection: IssueStatus?
         get() = _selection.value
         set(value) {
             _selection.value = value
@@ -85,7 +87,7 @@ class MapExplorerViewModel : ViewModel() {
             }
         }
 
-    fun updateSelection(value: String) {
+    fun updateSelection(value: IssueStatus?) {
         selection = value
     }
 
@@ -123,16 +125,17 @@ class MapExplorerViewModel : ViewModel() {
         _searchedReportOverview.value = null
     }
 
-    private val _searchItems = MutableStateFlow<List<String>>(
+    // Statuses instead of titles (unlike iOS): the localized title is resolved in the UI
+    private val _searchItems = MutableStateFlow(
         listOf(
-            IssueStatus.CONFIRMED.title,
-            IssueStatus.IN_PROGRESS.title,
-            IssueStatus.FIXED.title,
-            IssueStatus.PETITION_TO_SIGN.title,
-            IssueStatus.ASSIGNED.title
+            IssueStatus.CONFIRMED,
+            IssueStatus.IN_PROGRESS,
+            IssueStatus.FIXED,
+            IssueStatus.PETITION_TO_SIGN,
+            IssueStatus.ASSIGNED
         )
     )
-    val searchItems: StateFlow<List<String>> = _searchItems.asStateFlow()
+    val searchItems: StateFlow<List<IssueStatus>> = _searchItems.asStateFlow()
 
     private val _isAwaitingLocation = MutableStateFlow(false)
     val isAwaitingLocation: StateFlow<Boolean> = _isAwaitingLocation.asStateFlow()
@@ -147,7 +150,8 @@ class MapExplorerViewModel : ViewModel() {
         val fetchID = UUID.randomUUID()
         currentFetchID = fetchID
 
-        val statusIds = if (selection.isEmpty()) {
+        val selectedStatus = selection
+        val statusIds = if (selectedStatus == null) {
             listOf(
                 IssueStatus.CONFIRMED.identifier,
                 IssueStatus.IN_PROGRESS.identifier,
@@ -156,7 +160,7 @@ class MapExplorerViewModel : ViewModel() {
                 IssueStatus.ASSIGNED.identifier
             )
         } else {
-            IssueStatus.values().filter { it.title == selection }.map { it.identifier }
+            listOf(selectedStatus.identifier)
         }
 
         val currentCenter = authVm.cameraPosition.value.center
@@ -190,10 +194,11 @@ class MapExplorerViewModel : ViewModel() {
         val fetchID = UUID.randomUUID()
         currentFetchID = fetchID
 
-        val statusIds = if (selection.isEmpty()) {
+        val selectedStatus = selection
+        val statusIds = if (selectedStatus == null) {
             IssueStatus.values().map { it.identifier }
         } else {
-            IssueStatus.values().filter { it.title == selection }.map { it.identifier }
+            listOf(selectedStatus.identifier)
         }
 
         try {
@@ -241,7 +246,7 @@ class MapExplorerViewModel : ViewModel() {
         _searchText.value = text
     }
 
-    fun performSearch(targetCoordinate: Coordinate? = null, title: String = "Result") {
+    fun performSearch(targetCoordinate: Coordinate? = null, title: String = localized(R.string.result, "Result")) {
         val coordinate = targetCoordinate
             ?: authViewModel?.cameraPosition?.value?.center
             ?: Coordinate(MapCameraRegion.DEFAULT_LATITUDE, MapCameraRegion.DEFAULT_LONGITUDE)
@@ -267,7 +272,7 @@ class MapExplorerViewModel : ViewModel() {
     fun applySuggestion(suggestion: String, coordinate: Coordinate? = null) {
         _searchText.value = suggestion
         _showSearchOverlay.value = false
-        performSearch(targetCoordinate = coordinate, title = suggestion.ifEmpty { "Result" })
+        performSearch(targetCoordinate = coordinate, title = suggestion.ifEmpty { localized(R.string.result, "Result") })
     }
 
     fun centerMapOnUserLocation(userLocation: Coordinate? = null) {

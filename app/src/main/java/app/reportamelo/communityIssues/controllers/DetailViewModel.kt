@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 enum class DetailReportOptions(val id: String, val description: String) {
     WRONG_INFORMATION("wrongInformation", "Wrong Information"),
@@ -197,28 +199,28 @@ class DetailViewModel(
                 moderateReportProvider(violation, TypeOfContentToReport.REPORT)
                 _state.update {
                     it.copy(
-                        message = "Your moderation petition was sent",
+                        message = localized(R.string.your_moderation_petition_was_sent, "Your moderation petition was sent"),
                         showSuccessfulAlert = true
                     )
                 }
             } catch (_: CommonIntercommunicationErrors.ServerError) {
                 _state.update {
                     it.copy(
-                        errorMessage = "Server Error",
+                        errorMessage = localized(R.string.server_error, "Server Error"),
                         showErrorAlert = true
                     )
                 }
             } catch (_: CommonIntercommunicationErrors.NetworkError) {
                 _state.update {
                     it.copy(
-                        errorMessage = "It looks like that your network is experiencing some delays, please try again.",
+                        errorMessage = localized(R.string.it_looks_like_that_your_network_is_experiencing_some_delays_please_try, "It looks like that your network is experiencing some delays, please try again."),
                         showErrorAlert = true
                     )
                 }
             } catch (_: Exception) {
                 _state.update {
                     it.copy(
-                        errorMessage = "Error",
+                        errorMessage = localized(R.string.error, "Error"),
                         showErrorAlert = true
                     )
                 }
@@ -248,7 +250,7 @@ class DetailViewModel(
                         isBoostLoading = false,
                         voteCount = newVoteCount,
                         disableBoostButton = true,
-                        message = "Boost applied!",
+                        message = localized(R.string.boost_applied, "Boost applied!"),
                         showBoostAlert = true
                     )
                 }
@@ -256,7 +258,7 @@ class DetailViewModel(
                 _state.update {
                     it.copy(
                         isBoostLoading = false,
-                        message = "Failed to boost report",
+                        message = localized(R.string.failed_to_boost_report, "Failed to boost report"),
                         showBoostAlert = true
                     )
                 }

@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 class LandingViewModel(
     private val userRepository: UserRepository = UserRepository.shared
@@ -41,7 +43,7 @@ class LandingViewModel(
     private val _presentAlert = MutableStateFlow(false)
     val presentAlert = _presentAlert.asStateFlow()
 
-    private val _alertTitle = MutableStateFlow("Error")
+    private val _alertTitle = MutableStateFlow(localized(R.string.error, "Error"))
     val alertTitle = _alertTitle.asStateFlow()
 
     private val _message = MutableStateFlow("")
@@ -98,6 +100,10 @@ class LandingViewModel(
         _presentAlert.value = false
     }
 
+    fun setAccountDeleted(value: Boolean) {
+        _accountDeleted.value = value
+    }
+
     fun navigateTo(destination: LandingNavigation) {
         _path.value = _path.value + destination
     }
@@ -135,7 +141,7 @@ class LandingViewModel(
                 }
             }
         } else {
-            showAlert(message = "Something went wrong")
+            showAlert(message = localized(R.string.something_went_wrong, "Something went wrong"))
         }
     }
 
@@ -265,9 +271,9 @@ class LandingViewModel(
         when (e) {
             is CommonIntercommunicationErrors.InvalidPetition -> showAlert(message = "CLNT: ${e.message ?: "Unknown Code"}")
             is CommonIntercommunicationErrors.ServerError -> showAlert(message = "SVR: ${e.message ?: "Unknown Code"}")
-            is CommonIntercommunicationErrors.NetworkError -> showAlert(message = "There was a problem with the network: ${e.message}")
-            is CommonIntercommunicationErrors.Forbidden -> showAlert(title = "Access Denied", message = e.message ?: "")
-            else -> showAlert(message = "Something went wrong")
+            is CommonIntercommunicationErrors.NetworkError -> showAlert(message = localized(R.string.network_problem_s, "There was a problem with the network: %1\$s", e.message.toString()))
+            is CommonIntercommunicationErrors.Forbidden -> showAlert(title = localized(R.string.access_denied, "Access Denied"), message = e.message ?: "")
+            else -> showAlert(message = localized(R.string.something_went_wrong, "Something went wrong"))
         }
     }
 
@@ -276,7 +282,7 @@ class LandingViewModel(
         app.reportamelo.network.KeychainService.setToken(TokenKey.MUTATION, sessionId)
     }
 
-    private fun showAlert(title: String = "Error", message: String) {
+    private fun showAlert(title: String = localized(R.string.error, "Error"), message: String) {
         _alertTitle.value = title
         _message.value = message
         _presentAlert.value = true
@@ -388,6 +394,11 @@ class LandingViewModel(
         AppPreferences.remove("google_avatar_url")
         AppPreferences.remove("selected_avatar_option")
         AppPreferences.remove("selected_avatar_color")
+        AppPreferences.remove("selectedLanguageCode")
+        AppPreferences.remove("cityId")
+        AppPreferences.remove("countryCode")
+        AppPreferences.remove("enableEmailNotifications")
+        AppPreferences.remove("showMyUseNameWhenShare")
 
         KeychainService.deleteToken(KeychainKey.NAME)
         KeychainService.deleteToken(KeychainKey.EMAIL)

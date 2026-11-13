@@ -33,6 +33,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 class ReportError(message: String) : Exception(message)
 
@@ -225,10 +227,10 @@ class ReportController(
             showAlert(e.message)
             false
         } catch (e: CommonIntercommunicationErrors.ServerError) {
-            showAlert("Something went wrong, please try again later")
+            showAlert(localized(R.string.something_went_wrong_please_try_again_later, "Something went wrong, please try again later"))
             false
         } catch (e: Exception) {
-            showAlert(e.localizedMessage ?: "Something went wrong, please try again later")
+            showAlert(e.localizedMessage ?: localized(R.string.something_went_wrong_please_try_again_later, "Something went wrong, please try again later"))
             false
         }
     }
@@ -283,9 +285,9 @@ class ReportController(
                 } catch (e: CommonIntercommunicationErrors.NetworkError) {
                     showAlert(e.message)
                 } catch (e: CommonIntercommunicationErrors.ServerError) {
-                    showAlert("Something went wrong, please try again later")
+                    showAlert(localized(R.string.something_went_wrong_please_try_again_later, "Something went wrong, please try again later"))
                 } catch (e: Exception) {
-                    showAlert(e.localizedMessage ?: "Something went wrong, please try again later")
+                    showAlert(e.localizedMessage ?: localized(R.string.something_went_wrong_please_try_again_later, "Something went wrong, please try again later"))
                 }
             }
 
@@ -322,14 +324,14 @@ class ReportController(
     }
 
     fun getNavigationTitle(reportState: ReportStates): String {
-        return if (reportState == ReportStates.NEW) "Create a Report" else "Modifying a Report"
+        return if (reportState == ReportStates.NEW) localized(R.string.create_a_report_text, "Create a Report") else localized(R.string.modifying_a_report, "Modifying a Report")
     }
 
     fun getButtonMessage(step: ReportStep = _currentStep.value): String {
         return when (step) {
-            ReportStep.DETAILS -> "Submit"
-            ReportStep.CONFIRMATION -> "Done"
-            else -> "Next"
+            ReportStep.DETAILS -> localized(R.string.submit, "Submit")
+            ReportStep.CONFIRMATION -> localized(R.string.done, "Done")
+            else -> localized(R.string.next, "Next")
         }
     }
 

@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.localized
 
 class SignRequestViewModel : ViewModel() {
 
@@ -141,9 +143,9 @@ class SignRequestViewModel : ViewModel() {
 
     fun formatSigners(petition: PetitionPost): String {
         return if (petition.postSigners.hasCurrentUserSigned) {
-            "${petition.currentSignatures} citizens and you have signed"
+            localized(R.string.d_citizens_and_you_have_signed, "%1\$d citizens and you have signed", petition.currentSignatures)
         } else {
-            "${petition.currentSignatures} citizens have signed"
+            localized(R.string.d_citizens_have_signed, "%1\$d citizens have signed", petition.currentSignatures)
         }
     }
 }
