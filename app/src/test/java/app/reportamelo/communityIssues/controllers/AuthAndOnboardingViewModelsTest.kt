@@ -102,7 +102,7 @@ class AuthAndOnboardingViewModelsTest {
 
         assertTrue(landingViewModel.isGuest.value)
         assertNull(authViewModel.selectedCity.value)
-        assertEquals("guest-session-001", KeychainService.getToken(KeychainKey.MUTATION))
+        assertEquals("guest-session-001", app.reportamelo.network.KeychainService.getToken(app.reportamelo.network.TokenKey.MUTATION))
         assertEquals(UserType.GUEST.description, KeychainService.getToken(KeychainKey.USER_TYPE))
         assertTrue(UserRepository.shared.isGuestUser())
 

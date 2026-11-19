@@ -241,7 +241,7 @@ class ReportControllerTest {
                 throw CommonIntercommunicationErrors.InvalidPetition("ERROR_INVALID_REQUEST")
             },
             createShareableLinkProvider = {
-                "https://reportamelo.app/s/WzmQ0onUwYWgH8yC"
+                "WzmQ0onUwYWgH8yC/report/20261031/SSC/SV/pothole-on-avenue"
             },
             isGuestUserProvider = { true }
         )
@@ -269,7 +269,7 @@ class ReportControllerTest {
                 throw CommonIntercommunicationErrors.ServerError("HTTP 500")
             },
             createShareableLinkProvider = {
-                "https://reportamelo.app/s/WzmQ0onUwYWgH8yC"
+                "WzmQ0onUwYWgH8yC/report/20261031/SSC/SV/pothole-on-avenue"
             },
             isGuestUserProvider = { true }
         )
@@ -333,7 +333,7 @@ class ReportControllerTest {
                 "SV-SSC-261031-WzmQ0onUwYWgH8yC"
             },
             createShareableLinkProvider = {
-                "https://reportamelo.app/s/WzmQ0onUwYWgH8yC"
+                "WzmQ0onUwYWgH8yC/report/20261031/SSC/SV/pothole-on-avenue"
             },
             isGuestUserProvider = { false },
             increaseCounterProvider = {
@@ -353,7 +353,7 @@ class ReportControllerTest {
         assertFalse(controller.presentAlert.value)
         assertFalse(controller.isLoading.value)
         assertEquals("SV-SSC-261031-WzmQ0onUwYWgH8yC", controller.reportId.value)
-        assertEquals("https://reportamelo.app/s/WzmQ0onUwYWgH8yC", controller.shareableLink.value)
+        assertEquals("WzmQ0onUwYWgH8yC/report/20261031/SSC/SV/pothole-on-avenue", controller.shareableLink.value)
         assertEquals("SV", capturedCountryCode)
         assertEquals("a67b90f9-1d76-4835-a994-03cd04f1d619", capturedCityId)
         assertNotNull(capturedReportDao)
