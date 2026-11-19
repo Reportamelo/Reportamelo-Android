@@ -125,15 +125,16 @@ class ServiceClientDebugLoggerTest {
 
         assertEquals(Log.DEBUG, requestLog.priority)
         assertTrue(requestLog.message.contains("HTTP POST $baseUrl/attach-media/upload"))
-        assertTrue(requestLog.message.contains("Cookie: session_id=guest-session-abc-123"))
+        assertTrue(requestLog.message.contains("Cookie: session_id=***-123"))
         assertTrue(requestLog.message.contains("report-container: container-001"))
         assertTrue(requestLog.message.contains("upload-mode: one-by-one"))
         assertTrue(requestLog.message.contains("filename=report-picture.webp, mimeType=image/webp, size=128 bytes"))
 
         assertEquals(Log.ERROR, responseLog.priority)
         assertTrue(responseLog.message.contains("HTTP 403"))
-        assertTrue(responseLog.message.contains("Sent Cookie: session_id=guest-session-abc-123"))
+        assertTrue(responseLog.message.contains("Sent Cookie: session_id=***-123"))
         assertTrue(responseLog.message.contains("FORBIDDEN_ROLE"))
+        assertFalse(capturedLogs.any { it.message.contains("guest-session-abc-123") })
     }
 
     @Test

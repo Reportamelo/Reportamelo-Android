@@ -6,27 +6,28 @@ import app.reportamelo.models.GenericResponse
 import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
 import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPackConfiguration
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.put
+import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readBytes
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.request
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
+import io.ktor.http.contentLength
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import io.ktor.utils.io.readAvailable
+import java.io.ByteArrayOutputStream
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -86,6 +87,7 @@ object NetworkDebugLogger {
 
         val headerEntries = requestBuilder.headers.entries()
         val cookieHeader = requestBuilder.headers[HttpHeaders.Cookie]
+        val maskedCookie = cookieHeader?.let { maskCookieHeader(it) }
         val contentTypeHeader = requestBuilder.headers[HttpHeaders.ContentType]
 
         val message = buildString {
@@ -95,7 +97,7 @@ object NetworkDebugLogger {
                     !withOAuth && cookieHeader == null -> "OAuth: disabled (no Cookie)"
                     cookieHeader.isNullOrBlank() -> "OAuth: enabled | ⚠️ Cookie header missing"
                     cookieHeader == "session_id=" -> "OAuth: enabled | ⚠️ EMPTY SESSION COOKIE ($cookieHeader)"
-                    else -> "OAuth: $withOAuth | Cookie: $cookieHeader"
+                    else -> "OAuth: $withOAuth | Cookie: $maskedCookie"
                 }
                 appendLine("│ $cookieStatus")
             }
@@ -108,12 +110,13 @@ object NetworkDebugLogger {
                         if (!activeConfig.logCookies && key.equals(HttpHeaders.Cookie, ignoreCase = true)) {
                             continue
                         }
-                        appendLine("│   $key: ${values.joinToString("; ")}")
+                        appendLine("│   $key: ${maskHeaderValues(key, values)}")
                     }
                 }
             }
             if (activeConfig.logRequestBody) {
-                val resolvedBody = bodyOverride ?: extractBodyDescription(requestBuilder.body, contentTypeHeader)
+                val resolvedBody = (bodyOverride ?: extractBodyDescription(requestBuilder.body, contentTypeHeader))
+                    ?.let { redactSecrets(it) }
                 if (resolvedBody != null) {
                     val payloadBytes = resolvedBody.toByteArray().size
                     appendLine("│ Request Payload ($payloadBytes bytes): ${truncate(resolvedBody, activeConfig.maxBodyLength)}")
@@ -133,7 +136,8 @@ object NetworkDebugLogger {
         bodyOverride: String? = null
     ): String? {
         val contentTypeHeader = requestBuilder.headers[HttpHeaders.ContentType]
-        return bodyOverride ?: extractBodyDescription(requestBuilder.body, contentTypeHeader)
+        return (bodyOverride ?: extractBodyDescription(requestBuilder.body, contentTypeHeader))
+            ?.let { redactSecrets(it) }
     }
 
     @PublishedApi
@@ -159,10 +163,10 @@ object NetworkDebugLogger {
         val message = buildString {
             appendLine("┌<── HTTP ${status.value} ${status.description} $method $url (${durationMs}ms)")
             if (activeConfig.logCookies) {
-                appendLine("│ Sent Cookie: ${sentCookie ?: "(none)"}")
+                appendLine("│ Sent Cookie: ${sentCookie?.let { maskCookieHeader(it) } ?: "(none)"}")
                 val setCookie = response.headers.getAll(HttpHeaders.SetCookie)
                 if (!setCookie.isNullOrEmpty()) {
-                    appendLine("│ Set-Cookie: ${setCookie.joinToString("; ")}")
+                    appendLine("│ Set-Cookie: ${setCookie.joinToString("; ") { maskSetCookie(it) }}")
                 }
             }
             if (activeConfig.logRequestBody && !requestPayload.isNullOrEmpty()) {
@@ -175,7 +179,7 @@ object NetworkDebugLogger {
                     appendLine("│   (none)")
                 } else {
                     for ((key, values) in responseHeaders) {
-                        appendLine("│   $key: ${values.joinToString("; ")}")
+                        appendLine("│   $key: ${maskHeaderValues(key, values)}")
                     }
                 }
             }
@@ -183,7 +187,7 @@ object NetworkDebugLogger {
                 val bodyPreview = when {
                     bytes.isEmpty() -> "(empty body, 0 bytes)"
                     decoderType == DecoderType.MESSAGE_PACK && isSuccess -> "(MessagePack binary body, ${bytes.size} bytes)"
-                    else -> truncate(bytes.decodeToString(), activeConfig.maxBodyLength)
+                    else -> truncate(redactSecrets(bytes.decodeToString()), activeConfig.maxBodyLength)
                 }
                 appendLine("│ Response Body (${bytes.size} bytes): $bodyPreview")
             }
@@ -209,7 +213,7 @@ object NetworkDebugLogger {
         val message = buildString {
             appendLine("┌<── HTTP FAILED $method $url (${durationMs}ms)")
             if (activeConfig.logCookies) {
-                appendLine("│ Sent Cookie: ${cookie ?: "(none)"}")
+                appendLine("│ Sent Cookie: ${cookie?.let { maskCookieHeader(it) } ?: "(none)"}")
             }
             if (activeConfig.logRequestBody && !requestPayload.isNullOrEmpty()) {
                 val payloadBytes = requestPayload.toByteArray().size
@@ -232,7 +236,7 @@ object NetworkDebugLogger {
     ) {
         if (!shouldLog(activeConfig)) return
         val formatLabel = if (decoderType == DecoderType.MESSAGE_PACK) "MessagePack" else "JSON"
-        val preview = truncate(rawText, activeConfig.maxBodyLength)
+        val preview = truncate(redactSecrets(rawText), activeConfig.maxBodyLength)
         writeLog(
             Log.ERROR,
             activeConfig.tag,
@@ -274,6 +278,45 @@ object NetworkDebugLogger {
         }
     }
 
+    // Credentials never reach Logcat in full, not even in development builds.
+    private val secretJsonField = Regex(""""(token|idToken|authSessionId|session_id)"\s*:\s*"([^"]*)"""")
+
+    private fun maskSecret(value: String): String {
+        if (value.isEmpty()) return value
+        return if (value.length <= 8) "***" else "***" + value.takeLast(4)
+    }
+
+    private fun maskCookiePair(pair: String): String {
+        val separator = pair.indexOf('=')
+        if (separator < 0) return pair
+        return pair.substring(0, separator + 1) + maskSecret(pair.substring(separator + 1))
+    }
+
+    private fun maskCookieHeader(header: String): String {
+        return header.split(";").joinToString("; ") { maskCookiePair(it.trim()) }
+    }
+
+    private fun maskSetCookie(header: String): String {
+        val attributesStart = header.indexOf(';')
+        if (attributesStart < 0) return maskCookiePair(header)
+        return maskCookiePair(header.substring(0, attributesStart)) + header.substring(attributesStart)
+    }
+
+    private fun maskHeaderValues(key: String, values: List<String>): String {
+        return when {
+            key.equals(HttpHeaders.Cookie, ignoreCase = true) -> values.joinToString("; ") { maskCookieHeader(it) }
+            key.equals(HttpHeaders.SetCookie, ignoreCase = true) -> values.joinToString("; ") { maskSetCookie(it) }
+            key.equals(HttpHeaders.Authorization, ignoreCase = true) -> values.joinToString("; ") { maskSecret(it) }
+            else -> values.joinToString("; ")
+        }
+    }
+
+    private fun redactSecrets(text: String): String {
+        return secretJsonField.replace(text) { match ->
+            "\"${match.groupValues[1]}\":\"${maskSecret(match.groupValues[2])}\""
+        }
+    }
+
     private fun truncate(text: String, maxLength: Int): String {
         if (maxLength <= 0 || text.length <= maxLength) return text
         return text.take(maxLength) + "... (truncated, total ${text.length} chars)"
@@ -299,10 +342,17 @@ object NetworkDebugLogger {
 class ServiceClient(
     @PublishedApi internal val baseURL: String, // E.g., Apis.apiV1
     @PublishedApi internal val decoderType: DecoderType = DecoderType.JSON,
-    @PublishedApi internal val client: HttpClient = HttpClient(CIO),
+    @PublishedApi internal val client: HttpClient = sharedHttpClient,
     @PublishedApi internal var debugConfig: NetworkDebugConfig = NetworkDebugLogger.config
 ) {
     companion object {
+        // Largest response body the client will buffer.
+        const val MAX_RESPONSE_BYTES = 16 * 1024 * 1024
+
+        // One connection pool for every service; the OkHttp engine uses the platform TLS stack
+        // and honours the app's Network Security Config.
+        private val sharedHttpClient: HttpClient by lazy { HttpClient(OkHttp) }
+
         var debugEnabled: Boolean
             get() = NetworkDebugLogger.isEnabled
             set(value) {
@@ -416,6 +466,42 @@ class ServiceClient(
     }
 
     @PublishedApi
+    internal suspend fun send(
+        url: Url,
+        method: String,
+        block: HttpRequestBuilder.() -> Unit
+    ): Pair<HttpResponse, ByteArray> {
+        val httpMethod = when (method) {
+            "GET" -> HttpMethod.Get
+            "POST" -> HttpMethod.Post
+            "PUT" -> HttpMethod.Put
+            "DELETE" -> HttpMethod.Delete
+            "PATCH" -> HttpMethod.Patch
+            else -> throw IllegalArgumentException("Method $method not supported")
+        }
+        return client.prepareRequest(url) {
+            this.method = httpMethod
+            block()
+        }.execute { response -> response to readBodyLimited(response) }
+    }
+
+    private suspend fun readBodyLimited(response: HttpResponse): ByteArray {
+        val declaredLength = response.contentLength()
+        if (declaredLength != null && declaredLength > MAX_RESPONSE_BYTES) throw ServiceError.InvalidResponse
+
+        val channel = response.bodyAsChannel()
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(8 * 1024)
+        while (true) {
+            val read = channel.readAvailable(buffer, 0, buffer.size)
+            if (read < 0) break
+            if (output.size() + read > MAX_RESPONSE_BYTES) throw ServiceError.InvalidResponse
+            output.write(buffer, 0, read)
+        }
+        return output.toByteArray()
+    }
+
+    @PublishedApi
     internal suspend fun handleError(response: HttpResponse, bytes: ByteArray) {
         if (response.status.isSuccess()) return
 
@@ -462,7 +548,7 @@ class ServiceClient(
         var loggedUrl: String = url.toString()
         var loggedPayload: String? = requestPayload
 
-        val response = try {
+        val (response, bytes) = try {
             val requestBlock: HttpRequestBuilder.() -> Unit = {
                 configure(headers, withOAuth, builder)
                 loggedCookie = this.headers[HttpHeaders.Cookie]
@@ -477,14 +563,9 @@ class ServiceClient(
                     activeConfig = debugConfig
                 )
             }
-            when (method) {
-                "GET" -> client.get(url, requestBlock)
-                "POST" -> client.post(url, requestBlock)
-                "PUT" -> client.put(url, requestBlock)
-                "DELETE" -> client.delete(url, requestBlock)
-                "PATCH" -> client.patch(url, requestBlock)
-                else -> throw IllegalArgumentException("Method $method not supported")
-            }
+            send(url, method, requestBlock)
+        } catch (e: ServiceError) {
+            throw e
         } catch (e: Exception) {
             val durationMs = System.currentTimeMillis() - startTimeMs
             NetworkDebugLogger.logNetworkError(
@@ -499,7 +580,6 @@ class ServiceClient(
             throw ServiceError.NetworkError(e)
         }
 
-        val bytes = response.readBytes()
         val durationMs = System.currentTimeMillis() - startTimeMs
         val effectiveDecoderType = resolveDecoderType(response)
         NetworkDebugLogger.logResponse(
@@ -639,8 +719,8 @@ class ServiceClient(
         var loggedUrl: String = url.toString()
         val multipartSummary = NetworkDebugLogger.formatMultipartSummary(body, files)
 
-        val response = try {
-            client.post(url) {
+        val (response, bytes) = try {
+            send(url, "POST") {
                 configure(headers, withOAuth) {
                     setBody(
                         io.ktor.client.request.forms.MultiPartFormDataContent(
@@ -669,6 +749,8 @@ class ServiceClient(
                     activeConfig = debugConfig
                 )
             }
+        } catch (e: ServiceError) {
+            throw e
         } catch (e: Exception) {
             val durationMs = System.currentTimeMillis() - startTimeMs
             NetworkDebugLogger.logNetworkError(
@@ -683,7 +765,6 @@ class ServiceClient(
             throw ServiceError.NetworkError(e)
         }
         
-        val bytes = response.readBytes()
         val durationMs = System.currentTimeMillis() - startTimeMs
         val effectiveDecoderType = resolveDecoderType(response)
         NetworkDebugLogger.logResponse(
@@ -707,6 +788,8 @@ class ServiceClient(
 
 @PublishedApi
 internal object MsgPackJsonConverter {
+    private const val MAX_DEPTH = 64
+
     fun toJsonElement(bytes: ByteArray): JsonElement {
         if (bytes.isEmpty()) return JsonNull
         return Reader(bytes).readElement()
@@ -714,8 +797,19 @@ internal object MsgPackJsonConverter {
 
     private class Reader(private val bytes: ByteArray) {
         private var pos = 0
+        private var depth = 0
 
         fun readElement(): JsonElement {
+            if (depth >= MAX_DEPTH) throw IllegalArgumentException("MessagePack nesting deeper than $MAX_DEPTH")
+            depth++
+            try {
+                return readValue()
+            } finally {
+                depth--
+            }
+        }
+
+        private fun readValue(): JsonElement {
             val b = readUByte()
             return when {
                 b in 0x00..0x7f -> JsonPrimitive(b)
@@ -773,7 +867,10 @@ internal object MsgPackJsonConverter {
         }
 
         private fun readArray(size: Int): JsonArray {
-            if (size < 0) throw IllegalArgumentException("Negative MessagePack array size: $size")
+            // Every element takes at least one byte, so a larger count can't be genuine.
+            if (size < 0 || size > bytes.size - pos) {
+                throw IllegalArgumentException("Invalid MessagePack array size $size at offset $pos (size=${bytes.size})")
+            }
             val list = ArrayList<JsonElement>(size)
             repeat(size) {
                 list.add(readElement())
@@ -782,7 +879,9 @@ internal object MsgPackJsonConverter {
         }
 
         private fun readMap(size: Int): JsonObject {
-            if (size < 0) throw IllegalArgumentException("Negative MessagePack map size: $size")
+            if (size < 0 || size > (bytes.size - pos) / 2) {
+                throw IllegalArgumentException("Invalid MessagePack map size $size at offset $pos (size=${bytes.size})")
+            }
             val map = LinkedHashMap<String, JsonElement>(size)
             repeat(size) {
                 val keyElement = readElement()
@@ -795,7 +894,7 @@ internal object MsgPackJsonConverter {
 
         private fun readString(length: Int): String {
             if (length == 0) return ""
-            if (length < 0 || pos + length > bytes.size) {
+            if (length < 0 || length > bytes.size - pos) {
                 throw IllegalArgumentException("Invalid MessagePack string length $length at offset $pos (size=${bytes.size})")
             }
             val str = bytes.decodeToString(pos, pos + length)
@@ -805,7 +904,7 @@ internal object MsgPackJsonConverter {
 
         private fun readBytes(length: Int): ByteArray {
             if (length == 0) return ByteArray(0)
-            if (length < 0 || pos + length > bytes.size) {
+            if (length < 0 || length > bytes.size - pos) {
                 throw IllegalArgumentException("Invalid MessagePack bin length $length at offset $pos (size=${bytes.size})")
             }
             val slice = bytes.copyOfRange(pos, pos + length)
@@ -814,7 +913,7 @@ internal object MsgPackJsonConverter {
         }
 
         private fun skip(count: Int) {
-            if (count < 0 || pos + count > bytes.size) {
+            if (count < 0 || count > bytes.size - pos) {
                 throw IllegalArgumentException("Invalid MessagePack skip $count at offset $pos (size=${bytes.size})")
             }
             pos += count

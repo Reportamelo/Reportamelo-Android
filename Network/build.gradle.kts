@@ -36,11 +36,11 @@ val kotlinxSerializationMsgPackVersion = project.findProperty("kotlinxSerializat
 val ktor_version = project.findProperty("ktor_version")
 
 dependencies {
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("androidx.security:security-crypto:1.1.0")
     implementation("com.ensarsarajcic.kotlinx:serialization-msgpack:${kotlinxSerializationMsgPackVersion}")
     implementation("com.ensarsarajcic.kotlinx:serialization-msgpack-timestamp-extension:${kotlinxSerializationMsgPackVersion}")
     implementation("io.ktor:ktor-client-core:${ktor_version}")
-    implementation("io.ktor:ktor-client-cio:${ktor_version}")
+    implementation("io.ktor:ktor-client-okhttp:${ktor_version}")
     implementation("io.ktor:ktor-client-content-negotiation:${ktor_version}")
     implementation("io.ktor:ktor-serialization-kotlinx-json:${ktor_version}")
     implementation(project(":Models"))
