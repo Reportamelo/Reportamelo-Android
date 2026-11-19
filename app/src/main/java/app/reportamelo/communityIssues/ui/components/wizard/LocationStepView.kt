@@ -16,9 +16,6 @@ import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.ui.components.MiniMapLocator
 import app.reportamelo.communityIssues.ui.screens.modals.MapPickerScreen
 import app.reportamelo.communityIssues.ui.theme.Dimensions
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import app.reportamelo.communityIssues.R
 
@@ -65,14 +62,9 @@ fun LocationStepView(
                 }
                 model.setDifferentLocation(true)
             },
-            onLoadingChanged = { isLoading ->
-                model.setLoadingAddress(isLoading)
-            },
             onMapTouchChanged = onMapTouchChanged,
-            onChange = { newCoordinate, resolvedLocator ->
-                model.updateCoordinate(newCoordinate)
-                model.updateLocator(resolvedLocator)
-                model.setDifferentLocation(true)
+            onSettled = { settledCoordinate, debounceMillis ->
+                model.resolveAddress(context, settledCoordinate, debounceMillis)
             }
         )
 
@@ -101,16 +93,7 @@ fun LocationStepView(
                     model.setDifferentLocation(true)
                     showMapPickerModal = false
                     // Resolve latest address asynchronously in case the user confirmed mid-pan
-                    CoroutineScope(Dispatchers.Main).launch {
-                        model.setLoadingAddress(true)
-                        val resolved = LocatorDAO.findPlace(
-                            context,
-                            confirmedCoordinate.lat,
-                            confirmedCoordinate.lng
-                        )
-                        model.updateLocator(resolved)
-                        model.setLoadingAddress(false)
-                    }
+                    model.resolveAddress(context, confirmedCoordinate)
                 }
             )
         }

@@ -278,7 +278,6 @@ class LandingViewModel(
     }
 
     private fun saveSession(sessionId: String) {
-        KeychainService.save(KeychainKey.MUTATION, sessionId)
         app.reportamelo.network.KeychainService.setToken(TokenKey.MUTATION, sessionId)
     }
 

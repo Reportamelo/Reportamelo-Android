@@ -138,7 +138,7 @@ class ReportController(
         val currentLocator = model.locator.value
         val resolvedReportId = currentReport.id?.takeIf { it.isNotEmpty() } ?: model.buildReportId()
 
-        val url = runCatching {
+        val url = try {
             createShareableLinkProvider(
                 ReportToShare(
                     reportId = resolvedReportId,
@@ -155,9 +155,12 @@ class ReportController(
                     attachments = currentReport.attachments
                 )
             )
-        }.getOrElse {
-            val hash = model.reportSession.value.shareIndexHash.ifEmpty { "aXWsaxls" }
-            "https://reportamelo.app/s/$hash"
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // No client-side fallback: only the backend knows the share path, a guessed link would be dead
+            android.util.Log.w("ReportController", "createShareableLink failed", e)
+            ""
         }
 
         _shareableLink.value = url

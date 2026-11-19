@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.reportamelo.commons.utils.buildShareURLString
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.theme.Dimensions
@@ -33,6 +34,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import app.reportamelo.communityIssues.R
 import app.reportamelo.communityIssues.helpers.localized
+import app.reportamelo.communityIssues.ui.components.ThemedButtonStyle
 
 @Composable
 fun ConfirmationView(
@@ -46,7 +48,7 @@ fun ConfirmationView(
     val coroutineScope = rememberCoroutineScope()
 
     val displayId = id.ifEmpty { "SV-SSC-261027-aXWsaxls" }
-    val resolvedShareUrl = url.ifEmpty { "https://reportamelo.app/s/$displayId" }
+    val resolvedShareUrl = remember(url) { buildShareURLString(url) }
 
     Column(
         modifier = modifier
@@ -70,6 +72,7 @@ fun ConfirmationView(
                 text = stringResource(R.string.your_report_has_been_submitted),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
@@ -127,6 +130,7 @@ fun ConfirmationView(
                         message = if (showCopiedCodeMicroInteraction) stringResource(R.string.copied) else stringResource(R.string.copy_report_code),
                         icon = if (showCopiedCodeMicroInteraction) Icons.Filled.CheckCircle else Icons.Filled.ContentCopy,
                         type = ThemedButtonType.OUTLINE,
+                        style = ThemedButtonStyle.NORMAL,
                         onClick = {
                             clipboardManager.setText(AnnotatedString(displayId))
                             coroutineScope.launch {
@@ -143,9 +147,11 @@ fun ConfirmationView(
                         message = stringResource(R.string.share_report),
                         icon = Icons.Filled.Share,
                         type = ThemedButtonType.OUTLINE,
+                        style = ThemedButtonStyle.NORMAL,
+                        isEnabled = resolvedShareUrl != null,
                         onClick = {
                             val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                putExtra(Intent.EXTRA_TEXT, resolvedShareUrl)
+                                putExtra(Intent.EXTRA_TEXT, resolvedShareUrl.orEmpty())
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, localized(R.string.share_report, "Share Report"))

@@ -43,8 +43,6 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
@@ -86,7 +84,6 @@ fun MapPickerScreen(
     }
     var searchText by remember { mutableStateOf("") }
     var hasUserInteracted by remember { mutableStateOf(false) }
-    var geocodeJob by remember { mutableStateOf<Job?>(null) }
 
     val initialLatLng = remember { LatLng(initialCoordinate.lat, initialCoordinate.lng) }
 
@@ -126,16 +123,8 @@ fun MapPickerScreen(
             }
 
             if (!isMoving && (hasUserInteracted || results[0] > 0.5f)) {
-                geocodeJob?.cancel()
-                geocodeJob = coroutineScope.launch {
-                    model.setLoadingAddress(true)
-                    delay(250)
-                    val resolved = LocatorDAO.findPlace(context, target.latitude, target.longitude)
+                model.resolveAddress(context, updatedCoord, debounceMillis = 250L) { resolved ->
                     locator = resolved
-                    model.updateCoordinate(updatedCoord)
-                    model.updateLocator(resolved)
-                    model.setDifferentLocation(true)
-                    model.setLoadingAddress(false)
                 }
             }
         }

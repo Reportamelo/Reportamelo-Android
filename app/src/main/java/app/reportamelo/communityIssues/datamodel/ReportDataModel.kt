@@ -2,14 +2,18 @@ package app.reportamelo.communityIssues.datamodel
 
 import androidx.annotation.DrawableRes
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import app.reportamelo.communityIssues.R
 import app.reportamelo.communityIssues.controllers.PhotoUploadTracker
 import app.reportamelo.models.*
 import app.reportamelo.commons.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -464,8 +468,36 @@ class ReportDataModel private constructor() : ViewModel() {
         _isAddressValid.value = valid
     }
 
-    fun setLoadingAddress(loading: Boolean) {
-        _isLoadingAddress.value = loading
+    private var addressJob: Job? = null
+
+    // Runs in viewModelScope rather than the caller's composition scope: the Location step leaves
+    // composition on Next, and a lookup cancelled there would leave the address field locked and empty
+    fun resolveAddress(
+        context: android.content.Context,
+        coordinate: Coordinate,
+        debounceMillis: Long = 0L,
+        onResolved: (Locator) -> Unit = {}
+    ) {
+        val appContext = context.applicationContext
+        addressJob?.cancel()
+        var job: Job? = null
+        job = viewModelScope.launch {
+            _isLoadingAddress.value = true
+            try {
+                delay(debounceMillis)
+                val resolved = LocatorDAO.findPlace(appContext, coordinate.lat, coordinate.lng)
+                updateCoordinate(coordinate)
+                updateLocator(resolved)
+                setDifferentLocation(true)
+                onResolved(resolved)
+            } finally {
+                // A superseded lookup must not unlock the field while the newer one is still running
+                if (addressJob === job || addressJob == null) {
+                    _isLoadingAddress.value = false
+                }
+            }
+        }
+        addressJob = job
     }
 
     fun setUploadTrackers(trackers: List<PhotoUploadTracker>) {
@@ -581,6 +613,8 @@ class ReportDataModel private constructor() : ViewModel() {
     }
 
     fun clear() {
+        addressJob?.cancel()
+        addressJob = null
         _uploadTrackers.value = emptyList()
         _isAddressValid.value = false
         _isTitleValid.value = false

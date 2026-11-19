@@ -26,8 +26,6 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import app.reportamelo.communityIssues.datamodel.Locator
-import app.reportamelo.communityIssues.datamodel.LocatorDAO
 import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.models.Coordinate
 import com.google.android.gms.location.LocationServices
@@ -36,8 +34,6 @@ import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import app.reportamelo.communityIssues.R
@@ -49,9 +45,8 @@ fun MiniMapLocator(
     modifier: Modifier = Modifier,
     coordinate: Coordinate,
     onExpandMap: (Coordinate) -> Unit,
-    onChange: (Coordinate, Locator) -> Unit,
+    onSettled: (coordinate: Coordinate, debounceMillis: Long) -> Unit,
     onCoordinateChanged: (Coordinate) -> Unit = {},
-    onLoadingChanged: (Boolean) -> Unit = {},
     onMapTouchChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -60,7 +55,6 @@ fun MiniMapLocator(
     var lastInternalCoordinate by remember { mutableStateOf(coordinate) }
     var hasUserInteracted by remember { mutableStateOf(false) }
     var hasMovedFromInitial by remember { mutableStateOf(false) }
-    var geocodeJob by remember { mutableStateOf<Job?>(null) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(coordinate.lat, coordinate.lng), 16f)
@@ -93,7 +87,7 @@ fun MiniMapLocator(
         }
     }
 
-    // Observe camera movement reactively without cancelling geocode coroutines on subsequent frames
+    // Observe camera movement reactively; the address lookup itself is owned by the caller via onSettled
     LaunchedEffect(cameraPositionState) {
         snapshotFlow {
             Triple(
@@ -121,18 +115,7 @@ fun MiniMapLocator(
                     onCoordinateChanged(updatedCoord)
 
                     if (!isMoving) {
-                        geocodeJob?.cancel()
-                        geocodeJob = coroutineScope.launch {
-                            onLoadingChanged(true)
-                            delay(250)
-                            val resolvedLocator = LocatorDAO.findPlace(
-                                context,
-                                target.latitude,
-                                target.longitude
-                            )
-                            onLoadingChanged(false)
-                            onChange(updatedCoord, resolvedLocator)
-                        }
+                        onSettled(updatedCoord, 250L)
                     }
                 }
             }
@@ -153,10 +136,7 @@ fun MiniMapLocator(
                 cameraPositionState.animate(
                     CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 16f)
                 )
-                onLoadingChanged(true)
-                val resolvedLocator = LocatorDAO.findPlace(context, lat, lng)
-                onLoadingChanged(false)
-                onChange(updatedCoord, resolvedLocator)
+                onSettled(updatedCoord, 0L)
             }
         }
     }

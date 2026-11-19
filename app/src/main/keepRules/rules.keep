@@ -10,3 +10,5 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+# pdfbox-android references this optional JPEG2000 decoder; it is not bundled.
+-dontwarn com.gemalto.jp2.JP2Decoder
