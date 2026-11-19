@@ -110,8 +110,9 @@ class UserAndCitiesRepositoryTest {
         assertFalse(repo.isGuestUser())
         assertFalse(repo.userHasCompletedLandingPage())
 
-        // Simulate Guest login token save via commons KeychainService
-        app.reportamelo.commons.utils.KeychainService.save("guest-session-token-123")
+        // Simulate Guest login token save; the session token only lives in the network KeychainService
+        KeychainService.setToken(TokenKey.MUTATION, "guest-session-token-123")
+        assertNull(AppPreferences.getString(TokenKey.MUTATION.name))
         assertEquals("guest-session-token-123", KeychainService.getToken(TokenKey.MUTATION))
 
         app.reportamelo.commons.utils.KeychainService.save(
