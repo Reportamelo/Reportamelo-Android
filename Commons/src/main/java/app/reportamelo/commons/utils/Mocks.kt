@@ -33,9 +33,6 @@ object KeychainService {
     fun save(key: KeychainKey, value: String) {
         AppPreferences.setString(key.name, value)
     }
-    fun save(value: String) {
-        AppPreferences.setString(KeychainKey.MUTATION.name, value)
-    }
     fun deleteToken(key: KeychainKey) {
         AppPreferences.remove(key.name)
     }
@@ -59,6 +56,5 @@ enum class KeychainKey {
 object KeychainServiceMock {
     fun getToken(token: KeychainToken): String = KeychainService.getToken(token)
     fun save(key: KeychainKey, value: String) = KeychainService.save(key, value)
-    fun save(value: String) = KeychainService.save(value)
     fun deleteToken(key: KeychainKey) = KeychainService.deleteToken(key)
 }

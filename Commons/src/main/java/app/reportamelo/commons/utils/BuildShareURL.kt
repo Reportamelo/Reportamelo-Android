@@ -31,10 +31,19 @@ fun buildShareURLWithComponents(index: String, type: ShareType, slug: String): U
         .build()
 }
 
-fun buildShareURL(path: String): Uri? {
-    return Uri.parse(EndpointsStub.shareableURL).buildUpon()
-        .appendPath(path)
-        .build()
+// The backend returns the share path ("{index}/report/{date}/{grouping}/{country}/{slug}"); the host
+// comes from the build's SHARE_URL. The path is joined as-is so its slashes are not percent-encoded
+fun buildShareURLString(path: String?): String? {
+    val trimmed = path?.trim().orEmpty()
+    if (trimmed.isEmpty()) return null
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed
+    }
+    return "${EndpointsStub.shareableURL.trimEnd('/')}/${trimmed.trimStart('/')}"
+}
+
+fun buildShareURL(path: String?): Uri? {
+    return buildShareURLString(path)?.let { Uri.parse(it) }
 }
 
 fun getURL(path: String): Uri? {
