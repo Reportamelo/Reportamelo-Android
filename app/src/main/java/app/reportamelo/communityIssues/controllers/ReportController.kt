@@ -122,6 +122,12 @@ class ReportController(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                // G2: en modificación no hay sesión de respaldo. Una sesión con UUID aleatorio
+                // enviaría los adjuntos a un contenedor incorrecto.
+                if (model.report.value.reportState == ReportStates.MODIFYING) {
+                    showAlert(localized(R.string.something_went_wrong_please_try_again_later, "Something went wrong, please try again later"))
+                    return@launch
+                }
                 val datePart = SimpleDateFormat("yyMMdd", Locale.US).format(Date())
                 val fallbackSession = ReportSessionResponse(
                     reportContainer = UUID.randomUUID().toString(),
