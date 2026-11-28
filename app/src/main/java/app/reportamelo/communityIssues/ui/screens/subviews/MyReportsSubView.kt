@@ -862,11 +862,11 @@ fun MyReportsSubView(
                                             else -> Modifier
                                         }
                                     ),
+                                // Same subtle lift as the options card in UserProfileScreen
                                 shape = RoundedCornerShape(24.dp),
                                 color = cardBackground,
                                 tonalElevation = 0.dp,
-                                shadowElevation = 2.dp,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                                shadowElevation = 0.5.dp
                             ) {
                                 ReportCellView(
                                     report = report,

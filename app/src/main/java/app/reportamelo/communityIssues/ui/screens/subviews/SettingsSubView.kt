@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,6 +51,7 @@ import app.reportamelo.communityIssues.ui.components.LocalToastState
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.components.ToastType
+import app.reportamelo.communityIssues.ui.components.rememberSubViewTransitions
 import app.reportamelo.communityIssues.ui.screens.tabs.CitySelectionMode
 import app.reportamelo.communityIssues.ui.screens.tabs.CitySelectionView
 import app.reportamelo.communityIssues.ui.theme.LightCardBackground
@@ -306,141 +308,118 @@ fun SettingsSubView(
     val cardBackground = if (isDark) MaterialTheme.colorScheme.surface else LightCardBackground
     val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.67f)
 
-    if (isSelectingCity) {
-        BackHandler { isSelectingCity = false }
-        CitySelectionView(
-            modifier = modifier,
-            mode = CitySelectionMode.MODIFY,
-            selectedCity = selectedCity,
-            onBack = { isSelectingCity = false },
-            onCitySelected = { newCity ->
-                selectedCity = newCity
-            },
-            nextStep = {
-                CitiesRepository.saveSelectedCity(selectedCity)
-                settingsStore.cityId = selectedCity.cityId
-                authViewModel.setSelectedCity(selectedCity)
-                authViewModel.setCameraPosition(
-                    to = selectedCity.coordinates,
-                    latitudeDelta = CoordinateSpan.CITY_SELECTION_LATITUDE_DELTA,
-                    longitudeDelta = CoordinateSpan.CITY_SELECTION_LONGITUDE_DELTA
-                )
-                isSelectingCity = false
-                onBack?.invoke()
-                if (router.activeTab.value == 1) {
-                    router.activeTab.value = 0
-                }
-                router.activeTab.value = 1
-            }
-        )
-        return
-    }
+    val transitions = rememberSubViewTransitions()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Custom Top Bar matching iOS Navigation Bar & MyReportsSubView
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (onBack != null) {
-                Surface(
-                    onClick = onBack,
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .size(42.dp),
-                    shape = CircleShape,
-                    color = cardBackground,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 2.dp,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(28.dp)
-                        )
+    // Registered after UserProfileScreen's own handler, so while the city list is open a back
+    // gesture closes the list instead of leaving Settings.
+    BackHandler(enabled = isSelectingCity) { isSelectingCity = false }
+
+    AnimatedContent(
+        targetState = isSelectingCity,
+        modifier = modifier,
+        transitionSpec = { transitions.transform(forward = targetState) },
+        label = "SettingsCitySelection"
+    ) { selectingCity ->
+        if (selectingCity) {
+            CitySelectionView(
+                mode = CitySelectionMode.MODIFY,
+                selectedCity = selectedCity,
+                onBack = { isSelectingCity = false },
+                onCitySelected = { newCity ->
+                    selectedCity = newCity
+                },
+                nextStep = {
+                    CitiesRepository.saveSelectedCity(selectedCity)
+                    settingsStore.cityId = selectedCity.cityId
+                    authViewModel.setSelectedCity(selectedCity)
+                    authViewModel.setCameraPosition(
+                        to = selectedCity.coordinates,
+                        latitudeDelta = CoordinateSpan.CITY_SELECTION_LATITUDE_DELTA,
+                        longitudeDelta = CoordinateSpan.CITY_SELECTION_LONGITUDE_DELTA
+                    )
+                    isSelectingCity = false
+                    onBack?.invoke()
+                    if (router.activeTab.value == 1) {
+                        router.activeTab.value = 0
                     }
+                    router.activeTab.value = 1
                 }
-            }
-
-            Text(
-                text = subViewName,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 17.sp
-                ),
-                color = MaterialTheme.colorScheme.onBackground
             )
+            return@AnimatedContent
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Location Section
-            SettingsGroup(title = stringResource(R.string.location)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { isSelectingCity = true }
-                        .padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.city),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = selectedCity.thirdLevel,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+            // Custom Top Bar matching iOS Navigation Bar & MyReportsSubView
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (onBack != null) {
+                    Surface(
+                        onClick = onBack,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .size(42.dp),
+                        shape = CircleShape,
+                        color = cardBackground,
+                        tonalElevation = 0.dp,
+                        shadowElevation = 2.dp,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = stringResource(R.string.back),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                 }
+
+                Text(
+                    text = subViewName,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 17.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
 
-            // Language Section
-            SettingsGroup(title = stringResource(R.string.language)) {
-                Box {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Location Section
+                SettingsGroup(title = stringResource(R.string.location)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showLanguageMenu = true }
+                            .clickable { isSelectingCity = true }
                             .padding(vertical = 2.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.language),
+                            text = stringResource(R.string.city),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = languageLabel(selectedLanguage),
+                                text = selectedCity.thirdLevel,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -453,149 +432,234 @@ fun SettingsSubView(
                             )
                         }
                     }
-                    DropdownMenu(
-                        expanded = showLanguageMenu,
-                        onDismissRequest = { showLanguageMenu = false }
-                    ) {
-                        viewModel.supportedLanguages.forEach { languageTag ->
-                            DropdownMenuItem(
-                                text = { Text(languageLabel(languageTag)) },
-                                onClick = {
-                                    showLanguageMenu = false
-                                    // Android 13+ recreates the activity by itself after the change
-                                    if (viewModel.updateLanguage(languageTag) &&
-                                        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                                    ) {
-                                        context.findActivity()?.recreate()
+                }
+
+                // Language Section
+                SettingsGroup(title = stringResource(R.string.language)) {
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showLanguageMenu = true }
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.language),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = languageLabel(selectedLanguage),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showLanguageMenu,
+                            onDismissRequest = { showLanguageMenu = false }
+                        ) {
+                            viewModel.supportedLanguages.forEach { languageTag ->
+                                DropdownMenuItem(
+                                    text = { Text(languageLabel(languageTag)) },
+                                    onClick = {
+                                        showLanguageMenu = false
+                                        // Android 13+ recreates the activity by itself after the change
+                                        if (viewModel.updateLanguage(languageTag) &&
+                                            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                                        ) {
+                                            context.findActivity()?.recreate()
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Subscription Section
+                SettingsGroup(
+                    title = stringResource(R.string.subscription),
+                    footerText = stringResource(R.string.you_can_help_us_to_improve_the_app_by_supporting_us),
+                    enabled = !isGuest
+                ) {
+                    if (isPro) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.reportamelo_pro),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color(0xFF34C759)
+                            )
+                            Text(
+                                text = stringResource(R.string.active),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = SecondaryHeaderAndFooterColor
+                            )
+                        }
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = dividerColor
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isGuest) {
+                                    runCatching {
+                                        val intent = Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://play.google.com/store/account/subscriptions")
+                                        )
+                                        context.startActivity(intent)
                                     }
                                 }
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.manage_subscription),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = SecondaryHeaderAndFooterColor
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isGuest) {
+                                    // Upgrade action
+                                }
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.reportamelo_pro),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.upgrade),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = dividerColor
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isGuest) {
+                                    coroutineScope.launch {
+                                        subscriptionManager.restorePurchases()
+                                        if (subscriptionManager.isPro.value) {
+                                            toastState.show(
+                                                message = localized(R.string.your_subscription_has_been_restored, "Your subscription has been restored."),
+                                                type = ToastType.Success
+                                            )
+                                        } else {
+                                            toastState.show(
+                                                message = localized(R.string.no_active_subscription_was_found, "No active subscription was found."),
+                                                type = ToastType.Info
+                                            )
+                                        }
+                                    }
+                                }
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.do_you_have_a_subscription),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.restore),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Debug-only mock so flows that require an active subscription can be tested
+                    if (BuildConfig.DEBUG) {
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = dividerColor
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Mock Pro subscription (debug)",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f)
+                            )
+                            SettingsSwitch(
+                                checked = isPro,
+                                enabled = !isGuest,
+                                onCheckedChange = { subscriptionManager.setMockIsPro(it) }
                             )
                         }
                     }
                 }
-            }
 
-            // Subscription Section
-            SettingsGroup(
-                title = stringResource(R.string.subscription),
-                footerText = stringResource(R.string.you_can_help_us_to_improve_the_app_by_supporting_us),
-                enabled = !isGuest
-            ) {
-                if (isPro) {
+                // Privacy Section
+                SettingsGroup(
+                    title = stringResource(R.string.privacy),
+                    footerText = stringResource(R.string.you_can_show_or_hide_your_profile_and_your_username_when_you_share_your_reports_and_petitions_with_others),
+                    isLoading = updatingPrivacyLoading,
+                    enabled = !isGuest
+                ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.reportamelo_pro),
+                            text = stringResource(R.string.show_my_profile),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF34C759)
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
                         )
-                        Text(
-                            text = stringResource(R.string.active),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = SecondaryHeaderAndFooterColor
-                        )
-                    }
-                    HorizontalDivider(
-                        thickness = 0.5.dp,
-                        color = dividerColor
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = !isGuest) {
-                                runCatching {
-                                    val intent = Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("https://play.google.com/store/account/subscriptions")
-                                    )
-                                    context.startActivity(intent)
-                                }
+                        SettingsSwitch(
+                            checked = showMyProfile,
+                            enabled = !isGuest,
+                            onCheckedChange = {
+                                showMyProfile = it
+                                settingsStore.showMyProfile = it
+                                viewModel.updatePrivacySettings()
                             }
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.manage_subscription),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = SecondaryHeaderAndFooterColor
                         )
                     }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = !isGuest) {
-                                // Upgrade action
-                            }
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.reportamelo_pro),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(R.string.upgrade),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    HorizontalDivider(
-                        thickness = 0.5.dp,
-                        color = dividerColor
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = !isGuest) {
-                                coroutineScope.launch {
-                                    subscriptionManager.restorePurchases()
-                                    if (subscriptionManager.isPro.value) {
-                                        toastState.show(
-                                            message = localized(R.string.your_subscription_has_been_restored, "Your subscription has been restored."),
-                                            type = ToastType.Success
-                                        )
-                                    } else {
-                                        toastState.show(
-                                            message = localized(R.string.no_active_subscription_was_found, "No active subscription was found."),
-                                            type = ToastType.Info
-                                        )
-                                    }
-                                }
-                            }
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.do_you_have_a_subscription),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(R.string.restore),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                // Debug-only mock so flows that require an active subscription can be tested
-                if (BuildConfig.DEBUG) {
                     HorizontalDivider(
                         thickness = 0.5.dp,
                         color = dividerColor
@@ -606,305 +670,254 @@ fun SettingsSubView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Mock Pro subscription (debug)",
+                            text = stringResource(R.string.show_my_user_name_when_i_share),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         SettingsSwitch(
-                            checked = isPro,
+                            checked = showMyUserNameWhenShare,
                             enabled = !isGuest,
-                            onCheckedChange = { subscriptionManager.setMockIsPro(it) }
+                            onCheckedChange = {
+                                showMyUserNameWhenShare = it
+                                settingsStore.showMyUseNameWhenShare = it
+                                viewModel.updatePrivacySettings()
+                            }
                         )
                     }
                 }
-            }
 
-            // Privacy Section
-            SettingsGroup(
-                title = stringResource(R.string.privacy),
-                footerText = stringResource(R.string.you_can_show_or_hide_your_profile_and_your_username_when_you_share_your_reports_and_petitions_with_others),
-                isLoading = updatingPrivacyLoading,
-                enabled = !isGuest
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Notifications Section
+                SettingsGroup(
+                    title = stringResource(R.string.notifications),
+                    footerText = stringResource(R.string.you_can_enable_or_disable_push_notifications_in_order_to_receive_updates_when_authorities_are_resolving_your_report_or_petition),
+                    isLoading = updatingNotificationLoading,
+                    enabled = !isGuest
                 ) {
-                    Text(
-                        text = stringResource(R.string.show_my_profile),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = showMyProfile,
-                        enabled = !isGuest,
-                        onCheckedChange = {
-                            showMyProfile = it
-                            settingsStore.showMyProfile = it
-                            viewModel.updatePrivacySettings()
-                        }
-                    )
-                }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = dividerColor
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.show_my_user_name_when_i_share),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = showMyUserNameWhenShare,
-                        enabled = !isGuest,
-                        onCheckedChange = {
-                            showMyUserNameWhenShare = it
-                            settingsStore.showMyUseNameWhenShare = it
-                            viewModel.updatePrivacySettings()
-                        }
-                    )
-                }
-            }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.push_notifications),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SettingsSwitch(
+                            checked = enablePushNotifications,
+                            enabled = !isGuest,
+                            onCheckedChange = { newValue ->
+                                enablePushNotifications = newValue
+                                settingsStore.enablePushNotifications = newValue
+                                viewModel.updateNotificationSettings()
 
-            // Notifications Section
-            SettingsGroup(
-                title = stringResource(R.string.notifications),
-                footerText = stringResource(R.string.you_can_enable_or_disable_push_notifications_in_order_to_receive_updates_when_authorities_are_resolving_your_report_or_petition),
-                isLoading = updatingNotificationLoading,
-                enabled = !isGuest
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.push_notifications),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = enablePushNotifications,
-                        enabled = !isGuest,
-                        onCheckedChange = { newValue ->
-                            enablePushNotifications = newValue
-                            settingsStore.enablePushNotifications = newValue
-                            viewModel.updateNotificationSettings()
-
-                            if (!notificationManager.isPermissionGranted) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                if (!notificationManager.isPermissionGranted) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        notificationManager.onPermissionResult(true)
+                                        viewModel.updateDeviceToken()
+                                    }
                                 } else {
-                                    notificationManager.onPermissionResult(true)
                                     viewModel.updateDeviceToken()
                                 }
-                            } else {
-                                viewModel.updateDeviceToken()
                             }
-                        }
+                        )
+                    }
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = dividerColor
                     )
-                }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = dividerColor
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.email_notifications),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = enableEmailNotifications,
-                        enabled = !isGuest,
-                        onCheckedChange = {
-                            enableEmailNotifications = it
-                            settingsStore.enableEmailNotifications = it
-                            viewModel.updateNotificationSettings()
-                        }
-                    )
-                }
-            }
-
-            // App settings Section
-            SettingsGroup(
-                title = stringResource(R.string.app_settings),
-                enabled = !isGuest,
-                footerContent = {
-                    LinksView(
-                        type = LinkType.Privacy,
-                        modifier = Modifier.padding(start = 8.dp, top = 6.dp)
-                    )
-                }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.save_last_location),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = saveLastLocation,
-                        enabled = !isGuest,
-                        onCheckedChange = {
-                            saveLastLocation = it
-                            settingsStore.saveLastLocation = it
-                        }
-                    )
-                }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = dividerColor
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.use_my_current_location),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = useMyCurrentLocation,
-                        enabled = !isGuest,
-                        onCheckedChange = {
-                            useMyCurrentLocation = it
-                            settingsStore.useMyCurrentLocation = it
-                        }
-                    )
-                }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = dividerColor
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.anonymous_telemetry),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsSwitch(
-                        checked = enableAnonymousTelemetry,
-                        enabled = !isGuest,
-                        onCheckedChange = {
-                            enableAnonymousTelemetry = it
-                            settingsStore.enableAnonymousTelemetry = it
-                        }
-                    )
-                }
-            }
-
-            // Dangerous zone Section
-            SettingsGroup(
-                title = stringResource(R.string.dangerous_zone),
-                footerText = stringResource(R.string.once_your_account_is_deleted_there_is_no_going_back),
-                enabled = !isGuest
-            ) {
-                Text(
-                    text = stringResource(R.string.you_have_control_over_your_data_and_you_can_opt_to_delete_your_account),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(R.string.if_your_are_using_login_with_apple_you_have_to_revoke_the_access_to_your_account_from_apple_to_delete_your_access_to_this_app),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                ThemedButton(
-                    message = stringResource(R.string.delete_my_account),
-                    onClick = { viewModel.handleDeleteRequest(isPro = isPro) },
-                    type = ThemedButtonType.DANGER,
-                    isLoading = isDeletingAccount,
-                    isEnabled = !isGuest && isConnected
-                )
-            }
-
-            // About Section
-            SettingsGroup(title = stringResource(R.string.about)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.version),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    SelectionContainer {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = "v1.0.0",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp,
-                                letterSpacing = 0.69.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = stringResource(R.string.email_notifications),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SettingsSwitch(
+                            checked = enableEmailNotifications,
+                            enabled = !isGuest,
+                            onCheckedChange = {
+                                enableEmailNotifications = it
+                                settingsStore.enableEmailNotifications = it
+                                viewModel.updateNotificationSettings()
+                            }
                         )
                     }
                 }
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = dividerColor
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+
+                // App settings Section
+                SettingsGroup(
+                    title = stringResource(R.string.app_settings),
+                    enabled = !isGuest,
+                    footerContent = {
+                        LinksView(
+                            type = LinkType.Privacy,
+                            modifier = Modifier.padding(start = 8.dp, top = 6.dp)
+                        )
+                    }
                 ) {
-                    Text(
-                        text = "Commit",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    SelectionContainer {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = "8466b51",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp,
-                                letterSpacing = 0.69.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = stringResource(R.string.save_last_location),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SettingsSwitch(
+                            checked = saveLastLocation,
+                            enabled = !isGuest,
+                            onCheckedChange = {
+                                saveLastLocation = it
+                                settingsStore.saveLastLocation = it
+                            }
+                        )
+                    }
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = dividerColor
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.use_my_current_location),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SettingsSwitch(
+                            checked = useMyCurrentLocation,
+                            enabled = !isGuest,
+                            onCheckedChange = {
+                                useMyCurrentLocation = it
+                                settingsStore.useMyCurrentLocation = it
+                            }
+                        )
+                    }
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = dividerColor
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.anonymous_telemetry),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SettingsSwitch(
+                            checked = enableAnonymousTelemetry,
+                            enabled = !isGuest,
+                            onCheckedChange = {
+                                enableAnonymousTelemetry = it
+                                settingsStore.enableAnonymousTelemetry = it
+                            }
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(100.dp))
+                // Dangerous zone Section
+                SettingsGroup(
+                    title = stringResource(R.string.dangerous_zone),
+                    footerText = stringResource(R.string.once_your_account_is_deleted_there_is_no_going_back),
+                    enabled = !isGuest
+                ) {
+                    Text(
+                        text = stringResource(R.string.you_have_control_over_your_data_and_you_can_opt_to_delete_your_account),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.if_your_are_using_login_with_apple_you_have_to_revoke_the_access_to_your_account_from_apple_to_delete_your_access_to_this_app),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ThemedButton(
+                        message = stringResource(R.string.delete_my_account),
+                        onClick = { viewModel.handleDeleteRequest(isPro = isPro) },
+                        type = ThemedButtonType.DANGER,
+                        isLoading = isDeletingAccount,
+                        isEnabled = !isGuest && isConnected
+                    )
+                }
+
+                // About Section
+                SettingsGroup(title = stringResource(R.string.about)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.version),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        SelectionContainer {
+                            Text(
+                                text = "v1.0.0",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.69.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = dividerColor
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Commit",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        SelectionContainer {
+                            Text(
+                                text = "8466b51",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.69.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(100.dp))
+            }
         }
     }
 
