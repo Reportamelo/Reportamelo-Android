@@ -112,9 +112,16 @@ class CitySelectionViewModel(
         }
     }
 
+    /**
+     * Persists [city] as the default reporting city and calls [onUpdated] on success.
+     *
+     * The list is single-action (tapping a row commits the selection), so a second tap while a
+     * save is in flight is ignored instead of firing a duplicate request.
+     */
     fun updateCity(city: FriendlyCityDistribution, onUpdated: () -> Unit) {
+        if (_state.value.isLoading) return
+        _state.update { it.copy(isLoading = true, pendingCityId = city.cityId) }
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
             try {
                 CitiesRepository.saveSelectedCity(city)
                 if (userRepository.isGuestUser() || LandingViewModel.shared.isGuest.value) {
@@ -134,7 +141,7 @@ class CitySelectionViewModel(
             } catch (e: Exception) {
                 showError(localized(R.string.an_unexpected_error_has_occurred_please_try_again_text, "An unexpected error has occurred, please try again."))
             } finally {
-                _state.update { it.copy(isLoading = false) }
+                _state.update { it.copy(isLoading = false, pendingCityId = null) }
             }
         }
     }
@@ -166,6 +173,8 @@ data class CitySelectionState(
     ),
     val searchText: String = "",
     val isLoading: Boolean = false,
+    /** City whose selection is being saved; drives the per-row progress indicator. */
+    val pendingCityId: String? = null,
     val isSearchActive: Boolean = false,
     val searchOptionsSelection: CityFilter = CityFilter.CITY,
     val triggerFeedBack: Boolean = false,
