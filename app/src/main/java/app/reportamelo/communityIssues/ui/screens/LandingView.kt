@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import app.reportamelo.communityIssues.LocalAuthViewModel
 import app.reportamelo.communityIssues.controllers.LandingViewModel
+import app.reportamelo.communityIssues.ui.components.rememberSubViewTransitions
 import app.reportamelo.communityIssues.ui.screens.tabs.CitySelectionView
 import app.reportamelo.communityIssues.ui.screens.tabs.EssentialInformationView
 import app.reportamelo.communityIssues.ui.screens.tabs.Notifications
@@ -38,10 +39,18 @@ fun LandingView(
         }
     }
 
+    val transitions = rememberSubViewTransitions()
+
+    // Same push/pop motion as the profile sub-views: navigate() moves forward, popBackStack()
+    // (back button or system back) plays the mirror image.
     NavHost(
         navController = navController,
         startDestination = LandingNavigation.Login.name,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = { transitions.enter(forward = true) },
+        exitTransition = { transitions.exit(forward = true) },
+        popEnterTransition = { transitions.enter(forward = false) },
+        popExitTransition = { transitions.exit(forward = false) }
     ) {
         composable(LandingNavigation.Login.name) {
             LoginView(
