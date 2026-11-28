@@ -250,7 +250,8 @@ data class Attachment(
     @SerialName("validatedAt") val validatedAtRaw: Long? = null,
     val validatedBy: AttachmentValidatedBy? = null,
     val state: ReportAttachmentState,
-    val notes: String,
+    // El backend omite `notes` cuando viene vacío, así que no puede ser un campo requerido.
+    val notes: String = "",
     val key: String? = null,
     val fileName: String? = null,
     val reportContainer: String? = null
