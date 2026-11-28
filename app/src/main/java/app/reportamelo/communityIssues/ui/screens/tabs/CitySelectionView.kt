@@ -6,17 +6,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Check
@@ -26,26 +21,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.lerp
-import androidx.compose.ui.zIndex
+import app.reportamelo.communityIssues.R
 import app.reportamelo.communityIssues.controllers.CityFilter
 import app.reportamelo.communityIssues.controllers.CitySelectionViewModel
 import app.reportamelo.communityIssues.controllers.LandingViewModel
-import app.reportamelo.communityIssues.ui.components.ThemedButton
-import app.reportamelo.communityIssues.ui.components.ThemedButtonStyle
-import app.reportamelo.communityIssues.ui.components.ThemedButtonType
 import app.reportamelo.communityIssues.ui.theme.CommunityIssueReporterTheme
 import app.reportamelo.communityIssues.ui.theme.radialGradientBackground
 import app.reportamelo.models.FriendlyCityDistribution
-import androidx.compose.ui.res.stringResource
-import app.reportamelo.communityIssues.R
 
 enum class CitySelectionMode {
     MODIFY,
@@ -56,6 +45,13 @@ enum class CitySelectionMode {
         val step = STEP
     }
 }
+
+/**
+ * Room left under the list in [CitySelectionMode.MODIFY], where the screen is hosted inside the
+ * tab bar container and the floating tab bar overlaps the bottom of the content. Same clearance
+ * used by [CreateReportView].
+ */
+private val FloatingTabBarClearance = 108.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,8 +70,6 @@ fun CitySelectionView(
     val cities = remember(state.friendlyCities) {
         state.friendlyCities.documents?.sortedByDescending { it.isCapitalCity ?: 0 } ?: emptyList()
     }
-    val listState = rememberLazyListState()
-    var currentSelectedCity by remember(selectedCity) { mutableStateOf(selectedCity) }
 
     if (state.showErrorAlert) {
         AlertDialog(
@@ -134,68 +128,32 @@ fun CitySelectionView(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.85f),
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
-                    .navigationBarsPadding()
-                    .padding(horizontal = 36.dp)
-                    .padding(top = 16.dp, bottom = if (mode == CitySelectionMode.MODIFY) 16.dp else 12.dp)
-            ) {
-                ThemedButton(
-                    message = if (mode == CitySelectionMode.MODIFY) stringResource(R.string.select) else stringResource(R.string.next_step),
-                    onClick = {
-                        val targetCity = currentSelectedCity ?: selectedCity ?: cities.firstOrNull()
-                        if (targetCity != null) {
-                            onCitySelected(targetCity)
-                            viewModel.updateCity(targetCity) {
-                                nextStep()
-                            }
-                        } else {
-                            nextStep()
-                        }
-                    },
-                    type = ThemedButtonType.SECONDARY,
-                    style = ThemedButtonStyle.PROMINENT,
-                    isLoading = state.isLoading,
-                    isEnabled = (currentSelectedCity != null || selectedCity != null || cities.isNotEmpty()) && !state.isLoading
-                )
-            }
         }
     ) { paddingValues ->
+        // Only the top inset is applied to the column: the list scrolls edge-to-edge under the
+        // navigation bar / floating tab bar and reserves that space through its contentPadding.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
         ) {
-            TextField(
+            // Rounded pill search bar, styled like the one in CreateReportView
+            OutlinedTextField(
                 value = state.searchText,
                 onValueChange = { viewModel.updateSearchText(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = CircleShape,
                 placeholder = {
                     Text(
                         text = stringResource(R.string.search_a_city),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = stringResource(R.string.search),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        // Shifts the icon inward within the 48dp slot: more room from the pill edge, less gap to the text
+                        modifier = Modifier.padding(start = 12.dp)
                     )
                 },
                 trailingIcon = {
@@ -214,24 +172,24 @@ fun CitySelectionView(
                     }
                 },
                 singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    errorIndicatorColor = Color.Transparent,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                )
+                shape = CircleShape,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 4.dp, bottom = 12.dp)
             )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CityFilter.entries.forEach { filter ->
@@ -280,27 +238,37 @@ fun CitySelectionView(
                     )
                 }
             } else {
+                val bottomPadding = if (mode == CitySelectionMode.MODIFY) {
+                    FloatingTabBarClearance
+                } else {
+                    paddingValues.calculateBottomPadding() + 16.dp
+                }
+                // Material 3 Expressive segmented list. Single-action: tapping a row commits the
+                // city (save + continue), so there is no separate confirm button.
                 LazyColumn(
-                    state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 12.dp,
+                        bottom = bottomPadding
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
                 ) {
-                    items(cities, key = { it.cityId }) { city ->
-                        val itemZIndex by remember(listState, city.cityId) {
-                            derivedStateOf {
-                                calculateStackingZIndex(listState, city.cityId)
-                            }
-                        }
-                        val isSelected = (currentSelectedCity?.cityId ?: selectedCity?.cityId) == city.cityId
-                        CityCellView(
-                            modifier = Modifier
-                                .zIndex(itemZIndex)
-                                .scrollStackingEffect(listState = listState, itemKey = city.cityId),
+                    itemsIndexed(cities, key = { _, city -> city.cityId }) { index, city ->
+                        CityListItem(
                             city = city,
-                            isSelected = isSelected,
+                            index = index,
+                            count = cities.size,
+                            isCurrent = city.cityId == selectedCity?.cityId,
+                            isSaving = city.cityId == state.pendingCityId,
                             onClick = {
-                                currentSelectedCity = city
-                                onCitySelected(city)
+                                viewModel.updateCity(city) {
+                                    // Parent only hears about a city once it has been saved,
+                                    // and before nextStep() since some parents read it there.
+                                    onCitySelected(city)
+                                    nextStep()
+                                }
                             }
                         )
                     }
@@ -310,125 +278,65 @@ fun CitySelectionView(
     }
 }
 
-private fun calculateStackingZIndex(
-    listState: LazyListState,
-    itemKey: Any
-): Float {
-    val layoutInfo = listState.layoutInfo
-    val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.key == itemKey } ?: return 1f
-    val itemSize = itemInfo.size.toFloat().coerceAtLeast(1f)
-    val viewportTop = 0f
-    val viewportBottom = (layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding).toFloat()
-
-    return when {
-        itemInfo.offset < viewportTop -> {
-            val visibility = ((itemInfo.offset + itemInfo.size - viewportTop) / itemSize).coerceIn(0f, 1f)
-            visibility
-        }
-        itemInfo.offset + itemInfo.size > viewportBottom -> {
-            val visibility = ((viewportBottom - itemInfo.offset) / itemSize).coerceIn(0f, 1f)
-            visibility
-        }
-        else -> 1f
-    }
-}
-
-private fun Modifier.scrollStackingEffect(
-    listState: LazyListState,
-    itemKey: Any
-): Modifier = this.graphicsLayer {
-    val layoutInfo = listState.layoutInfo
-    val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.key == itemKey }
-    if (itemInfo == null) {
-        scaleX = 1f
-        scaleY = 1f
-        alpha = 1f
-        translationY = 0f
-        return@graphicsLayer
-    }
-
-    val itemSize = itemInfo.size.toFloat().coerceAtLeast(1f)
-    val viewportTop = 0f
-    val viewportBottom = (layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding).toFloat()
-
-    when {
-        // Exiting through the top edge of the LazyColumn
-        itemInfo.offset < viewportTop -> {
-            val visibility = ((itemInfo.offset + itemInfo.size - viewportTop) / itemSize).coerceIn(0f, 1f)
-            val targetScale = lerp(0.92f, 1f, visibility)
-            scaleX = targetScale
-            scaleY = targetScale
-            alpha = lerp(0.6f, 1f, visibility)
-            translationY = (viewportTop - itemInfo.offset) * 0.45f
-        }
-        // Entering or exiting through the bottom edge of the LazyColumn
-        itemInfo.offset + itemInfo.size > viewportBottom -> {
-            val visibility = ((viewportBottom - itemInfo.offset) / itemSize).coerceIn(0f, 1f)
-            val targetScale = lerp(0.92f, 1f, visibility)
-            scaleX = targetScale
-            scaleY = targetScale
-            alpha = lerp(0.6f, 1f, visibility)
-            translationY = -((itemInfo.offset + itemInfo.size) - viewportBottom) * 0.45f
-        }
-        else -> {
-            scaleX = 1f
-            scaleY = 1f
-            alpha = 1f
-            translationY = 0f
-        }
-    }
-}
-
+/**
+ * One row of the segmented city list. [index] and [count] pick the segmented shape: the first and
+ * last rows get the large outer corners, the middle ones the small inner corners.
+ */
 @Composable
-fun CityCellView(
+fun CityListItem(
     modifier: Modifier = Modifier,
     city: FriendlyCityDistribution,
-    isSelected: Boolean,
+    index: Int,
+    count: Int,
+    isCurrent: Boolean,
+    isSaving: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .heightIn(min = 95.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = if (isSelected) {
-            BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
-        } else {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+    val supportingText = remember(city.legalGroupName, city.groupingName) {
+        listOfNotNull(city.legalGroupName, city.groupingName?.takeIf { it.isNotBlank() })
+            .joinToString(separator = "\n")
+    }
+    val colors = if (isCurrent) {
+        ListItemDefaults.segmentedColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            supportingContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            trailingContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    } else {
+        ListItemDefaults.segmentedColors()
+    }
+
+    SegmentedListItem(
+        onClick = onClick,
+        shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
+        modifier = modifier.semantics { selected = isCurrent },
+        colors = colors,
+        supportingContent = { Text(supportingText) },
+        trailingContent = when {
+            isSaving -> {
+                {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.5.dp
+                    )
+                }
+            }
+            isCurrent -> {
+                {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = stringResource(R.string.selected_text)
+                    )
+                }
+            }
+            else -> null
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 95.dp)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = city.thirdLevel,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.2.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = city.legalGroupName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (!city.groupingName.isNullOrEmpty()) {
-                Text(
-                    text = city.groupingName!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+        Text(
+            text = city.thirdLevel,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
