@@ -156,4 +156,20 @@
     <string name="otp_already_sent">The code has already been sent. Try again in a minute.</string>
     <string name="otp_limit_exceeded">You have exceeded the limit of code requests.</string>
     <string name="otp_email_not_found">We couldn\'t find an account with that email.</string>
+    <!-- Menú contextual de reportes (long press en Mis reportes) -->
+    <string name="report_action_open_in_maps">Open in Maps</string>
+    <string name="report_action_copy_id">Copy ID</string>
+    <string name="report_action_share">Share Report</string>
+    <string name="report_action_timeline">Timeline</string>
+    <string name="report_action_delete">Delete</string>
+    <string name="report_action_a11y_label">Report actions</string>
+    <string name="report_delete_dialog_title">Delete this report?</string>
+    <string name="report_delete_dialog_body">This can\'t be undone.</string>
+    <string name="report_delete_dialog_confirm">Delete</string>
+    <string name="report_delete_dialog_cancel">Cancel</string>
+    <string name="report_id_copied">ID copied</string>
+    <string name="report_timeline_empty">This report has no updates yet.</string>
+    <string name="report_timeline_error">We couldn\'t load the timeline.</string>
+    <string name="report_deleted">Report deleted</string>
+    <string name="report_delete_failed">We couldn\'t delete the report.</string>
 </resources>

@@ -156,4 +156,20 @@
     <string name="otp_already_sent">El código ya ha sido enviado. Intenta de nuevo en un minuto.</string>
     <string name="otp_limit_exceeded">Has excedido el límite de envíos de códigos.</string>
     <string name="otp_email_not_found">No encontramos una cuenta con ese correo.</string>
+    <!-- Menú contextual de reportes (long press en Mis reportes) -->
+    <string name="report_action_open_in_maps">Abrir en el mapa</string>
+    <string name="report_action_copy_id">Copiar ID</string>
+    <string name="report_action_share">Compartir reporte</string>
+    <string name="report_action_timeline">Línea de tiempo</string>
+    <string name="report_action_delete">Eliminar</string>
+    <string name="report_action_a11y_label">Acciones del reporte</string>
+    <string name="report_delete_dialog_title">¿Eliminar este reporte?</string>
+    <string name="report_delete_dialog_body">Esta acción no se puede deshacer.</string>
+    <string name="report_delete_dialog_confirm">Eliminar</string>
+    <string name="report_delete_dialog_cancel">Cancelar</string>
+    <string name="report_id_copied">ID copiado</string>
+    <string name="report_timeline_empty">Este reporte aún no tiene actualizaciones.</string>
+    <string name="report_timeline_error">No pudimos cargar la línea de tiempo.</string>
+    <string name="report_deleted">Reporte eliminado</string>
+    <string name="report_delete_failed">No pudimos eliminar el reporte.</string>
 </resources>
