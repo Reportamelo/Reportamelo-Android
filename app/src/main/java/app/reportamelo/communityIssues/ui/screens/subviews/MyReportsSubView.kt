@@ -1,8 +1,14 @@
 package app.reportamelo.communityIssues.ui.screens.subviews
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Build
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +23,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.core.app.ShareCompat
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -31,8 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.reportamelo.commons.*
+import app.reportamelo.commons.utils.buildShareURLString
+import app.reportamelo.communityIssues.controllers.MyReportsEvent
 import app.reportamelo.communityIssues.controllers.MyReportsViewModel
 import app.reportamelo.communityIssues.datamodel.*
+import app.reportamelo.communityIssues.ui.components.DeleteReportConfirmationDialog
+import app.reportamelo.communityIssues.ui.components.ReportAction
+import app.reportamelo.communityIssues.ui.components.ReportActionsBottomSheet
+import kotlinx.coroutines.launch
 import app.reportamelo.communityIssues.datamodel.Report
 import app.reportamelo.communityIssues.ui.theme.DarkInputText
 import app.reportamelo.communityIssues.ui.theme.LightCardBackground
@@ -574,18 +595,111 @@ fun MyReportsSubView(
     subViewName: String = stringResource(R.string.my_reports),
     mode: ViewOptions = ViewOptions.LIST,
     viewModel: MyReportsViewModel = viewModel(),
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    onReportToModify: ((Report) -> Unit)? = null,
+    onOpenTimeline: ((String) -> Unit)? = null
 ) {
     val reports by viewModel.reports.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val refreshID by viewModel.refreshID.collectAsState()
+    val deletingReportIds by viewModel.deletingReportIds.collectAsState()
 
     val isDark = isSystemInDarkTheme()
     val cardBackground = if (isDark) MaterialTheme.colorScheme.surface else LightCardBackground
 
+    val context = LocalContext.current
+    // `combinedClickable` ya dispara el haptic de long press (hapticFeedbackEnabled, activo por
+    // defecto en esta versión de Foundation). Solo se dispara a mano en la rama con `pointerInput`.
+    val haptics = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    // El contenido es corto: no debe tener estado "medio abierto".
+    val sheetState = rememberBottomSheetState(
+        SheetValue.Hidden,
+        setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+
+    // El menú contextual solo existe donde el reporte es del usuario y puede actuar sobre él.
+    val actionsEnabled = mode == ViewOptions.LIST_AND_MODIFY
+    var reportForActions by remember { mutableStateOf<Report?>(null) }
+    var reportPendingDeletion by remember { mutableStateOf<Report?>(null) }
+
+    val idCopiedMessage = stringResource(R.string.report_id_copied)
+    val deletedMessage = stringResource(R.string.report_deleted)
+    val deleteFailedMessage = stringResource(R.string.report_delete_failed)
+    val retryLabel = stringResource(R.string.retry)
+    val shareVia = stringResource(R.string.share_via)
+    val actionsAccessibilityLabel = stringResource(R.string.report_action_a11y_label)
+
     LaunchedEffect(refreshID) {
         viewModel.fetchReports()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is MyReportsEvent.ReportDeleted -> {
+                    snackbarHostState.showSnackbar(deletedMessage)
+                }
+                is MyReportsEvent.ReportDeleteFailed -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = deleteFailedMessage,
+                        actionLabel = retryLabel,
+                        duration = SnackbarDuration.Long
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.delete(event.report)
+                    }
+                }
+            }
+        }
+    }
+
+    fun dismissSheetThen(block: () -> Unit) {
+        // Cada acción cierra el sheet antes de ejecutar su efecto.
+        coroutineScope.launch {
+            sheetState.hide()
+        }.invokeOnCompletion { cause ->
+            // Si el cierre se canceló (la pantalla se fue), la acción no debe dispararse.
+            if (cause != null) return@invokeOnCompletion
+            reportForActions = null
+            block()
+        }
+    }
+
+    fun handleAction(action: ReportAction, report: Report) {
+        when (action) {
+            ReportAction.OPEN_IN_MAPS -> dismissSheetThen { viewModel.openInMaps(report) }
+
+            ReportAction.COPY_ID -> dismissSheetThen {
+                val id = report.id
+                if (!id.isNullOrBlank()) {
+                    copyReportIdToClipboard(context, id)
+                    // Android 13+ muestra su propia previsualización de "copiado": no se duplica.
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                        coroutineScope.launch { snackbarHostState.showSnackbar(idCopiedMessage) }
+                    }
+                }
+            }
+
+            ReportAction.SHARE_REPORT -> dismissSheetThen {
+                buildShareURLString(report.shareUrl)?.let { url ->
+                    ShareCompat.IntentBuilder(context)
+                        .setType("text/plain")
+                        .setText(url)
+                        .setChooserTitle(shareVia)
+                        .startChooser()
+                }
+            }
+
+            // Navegar primero, cargar después: el destino hace la petición.
+            ReportAction.TIMELINE -> dismissSheetThen {
+                report.id?.let { onOpenTimeline?.invoke(it) }
+            }
+
+            ReportAction.DELETE -> dismissSheetThen { reportPendingDeletion = report }
+        }
     }
 
     Box(
@@ -698,19 +812,54 @@ fun MyReportsSubView(
                             items = reports,
                             key = { it.id ?: it.hashCode() }
                         ) { report ->
-                            val canModify = mode == ViewOptions.LIST_AND_MODIFY &&
-                                (report.status == IssueStatus.REPORTED || report.status == IssueStatus.RECTIFICATION)
+                            val canModify = onReportToModify != null && canModifyReport(mode, report.status)
+                            val isDeleting = report.id != null && report.id in deletingReportIds
+                            val showActions = actionsEnabled && !isDeleting
 
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .alpha(if (isDeleting) 0.45f else 1f)
                                     .then(
-                                        if (canModify) {
-                                            Modifier.clickable {
-                                                ReportDataModel.shared.prepareForModification(report)
+                                        if (showActions) {
+                                            // TalkBack no puede hacer long press: la misma acción se
+                                            // expone como acción de accesibilidad personalizada.
+                                            // La tarjeta se fusiona en un solo nodo (como el
+                                            // `.accessibilityElement(children: .contain)` de iOS)
+                                            // para que la acción sea alcanzable al enfocarla.
+                                            Modifier.semantics(mergeDescendants = true) {
+                                                customActions = listOf(
+                                                    CustomAccessibilityAction(actionsAccessibilityLabel) {
+                                                        reportForActions = report
+                                                        true
+                                                    }
+                                                )
                                             }
                                         } else {
                                             Modifier
+                                        }
+                                    )
+                                    .then(
+                                        when {
+                                            // El wizard prepara el reporte en modo modificación (ReportWizardContainer)
+                                            canModify && showActions -> Modifier.combinedClickable(
+                                                onClick = { onReportToModify?.invoke(report) },
+                                                onLongClick = { reportForActions = report }
+                                            )
+                                            canModify -> Modifier.clickable(enabled = !isDeleting) {
+                                                onReportToModify?.invoke(report)
+                                            }
+                                            // Sin destino al tocar: un `clickable` vacío haría que
+                                            // TalkBack ofreciera activar una tarjeta que no hace nada.
+                                            showActions -> Modifier.pointerInput(report.id) {
+                                                detectTapGestures(
+                                                    onLongPress = {
+                                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        reportForActions = report
+                                                    }
+                                                )
+                                            }
+                                            else -> Modifier
                                         }
                                     ),
                                 shape = RoundedCornerShape(24.dp),
@@ -748,5 +897,42 @@ fun MyReportsSubView(
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
     }
+
+    reportForActions?.let { report ->
+        ReportActionsBottomSheet(
+            reportTitle = report.title,
+            reportId = report.id,
+            status = report.status,
+            sheetState = sheetState,
+            onDismissRequest = { reportForActions = null },
+            onAction = { action -> handleAction(action, report) }
+        )
+    }
+
+    reportPendingDeletion?.let { report ->
+        DeleteReportConfirmationDialog(
+            onConfirm = {
+                reportPendingDeletion = null
+                viewModel.delete(report)
+            },
+            onDismiss = { reportPendingDeletion = null }
+        )
+    }
+}
+
+/** Copia el `id` del reporte al portapapeles del sistema. */
+private fun copyReportIdToClipboard(context: Context, reportId: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    clipboard.setPrimaryClip(
+        ClipData.newPlainText(context.getString(R.string.report_action_copy_id), reportId)
+    )
 }

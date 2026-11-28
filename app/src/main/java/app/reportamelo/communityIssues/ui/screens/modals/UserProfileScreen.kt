@@ -29,15 +29,19 @@ import app.reportamelo.communityIssues.LocalAuthViewModel
 import app.reportamelo.communityIssues.controllers.LandingViewModel
 import app.reportamelo.communityIssues.datamodel.AuthViewModel
 import app.reportamelo.communityIssues.datamodel.ProfileDataModel
+import app.reportamelo.communityIssues.datamodel.Report
+import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.ui.components.LinkType
 import app.reportamelo.communityIssues.ui.components.LinksView
 import app.reportamelo.communityIssues.ui.components.ProfileImage
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonStyle
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
+import app.reportamelo.communityIssues.ui.components.wizard.ReportWizardContainer
 import app.reportamelo.communityIssues.ui.screens.subviews.CommentsSubView
 import app.reportamelo.communityIssues.ui.screens.subviews.LicensesSubView
 import app.reportamelo.communityIssues.ui.screens.subviews.MyReportsSubView
+import app.reportamelo.communityIssues.ui.screens.subviews.ReportTimelineSubView
 import app.reportamelo.communityIssues.ui.screens.subviews.ReportsAndViolationsCenterView
 import app.reportamelo.communityIssues.ui.screens.subviews.SettingsSubView
 import app.reportamelo.repository.UserRepository
@@ -89,6 +93,8 @@ fun UserProfileScreen(
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     var currentDestination by remember { mutableStateOf<ProfileDestinations?>(null) }
+    var reportToModify by remember { mutableStateOf<Report?>(null) }
+    var timelineReportId by remember { mutableStateOf<String?>(null) }
 
     val profileDataModel by landingViewModel.profile.collectAsState()
     val landingIsGuest by landingViewModel.isGuest.collectAsState()
@@ -103,6 +109,27 @@ fun UserProfileScreen(
         profileDataModel.setIsGuest(effectiveIsGuest)
     }
 
+    reportToModify?.let { report ->
+        BackHandler { reportToModify = null }
+        ReportWizardContainer(
+            modifier = modifier,
+            model = ReportDataModel.shared,
+            onCompletion = { _, _ -> reportToModify = null },
+            reportToModify = report
+        )
+        return
+    }
+
+    timelineReportId?.let { reportId ->
+        BackHandler { timelineReportId = null }
+        ReportTimelineSubView(
+            modifier = modifier,
+            reportId = reportId,
+            onBack = { timelineReportId = null }
+        )
+        return
+    }
+
     if (currentDestination != null) {
         BackHandler {
             currentDestination = null
@@ -113,6 +140,8 @@ fun UserProfileScreen(
                     modifier = modifier,
                     subViewName = stringResource(R.string.my_reports),
                     mode = ViewOptions.LIST_AND_MODIFY,
+                    onReportToModify = { reportToModify = it },
+                    onOpenTimeline = { timelineReportId = it },
                     onBack = { currentDestination = null }
                 )
             }

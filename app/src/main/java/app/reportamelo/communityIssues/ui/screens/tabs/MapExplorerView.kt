@@ -68,6 +68,7 @@ import app.reportamelo.communityIssues.controllers.MapExplorerViewModel
 import app.reportamelo.communityIssues.datamodel.AuthViewModel
 import app.reportamelo.communityIssues.datamodel.SettingsStore
 import app.reportamelo.communityIssues.helpers.DeepLinkRouter
+import app.reportamelo.communityIssues.helpers.MapFocusCoordinator
 import app.reportamelo.communityIssues.helpers.maps.SearchCompleter
 import app.reportamelo.communityIssues.helpers.maps.rememberMapStyleOptions
 import app.reportamelo.communityIssues.ui.components.BasicInformationView
@@ -205,6 +206,17 @@ fun MapExplorerView(
                     latitude = center.latitude,
                     longitude = center.longitude
                 )
+            }
+        }
+    }
+
+    // Acción "Open in Maps" desde Mis reportes (otro tab). El evento es de un solo consumo:
+    // una rotación recompone esta pantalla pero no vuelve a mover la cámara.
+    LaunchedEffect(controller) {
+        MapFocusCoordinator.shared.requests.collect { request ->
+            controller.focusOnReport(request)?.let { focusedReport ->
+                router.report.value = focusedReport
+                router.isPresented.value = true
             }
         }
     }

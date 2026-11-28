@@ -12,11 +12,17 @@ import app.reportamelo.network.*
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.reportamelo.communityIssues.helpers.DeepLinkRouter
+import app.reportamelo.communityIssues.helpers.MapFocusCoordinator
+import app.reportamelo.communityIssues.helpers.MapFocusRequest
 import app.reportamelo.network.services.*
 import app.reportamelo.repository.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -24,6 +30,9 @@ import java.util.UUID
 class MyReportsViewModel @JvmOverloads constructor(
     private val listByUserProvider: (Int) -> kotlinx.coroutines.flow.Flow<PaginatedResponse<ReportDAO>> = { page ->
         ReportRepository.listByUser(page)
+    },
+    private val deleteProvider: suspend (String) -> SuccessfulResult = { reportId ->
+        ReportRepository.delete(reportId)
     }
 ) : ViewModel() {
     private val _reports = MutableStateFlow<List<Report>>(emptyList())
@@ -111,6 +120,14 @@ class MyReportsViewModel @JvmOverloads constructor(
         }
     }
 
+    private val _deletingReportIds = MutableStateFlow<Set<String>>(emptySet())
+    /** Reportes con un borrado en vuelo: la tarjeta se atenúa y deja de ser interactiva. */
+    val deletingReportIds: StateFlow<Set<String>> = _deletingReportIds.asStateFlow()
+
+    private val _events = Channel<MyReportsEvent>(Channel.BUFFERED)
+    /** Eventos de un solo consumo (snackbars). Una rotación no los repite. */
+    val events: Flow<MyReportsEvent> = _events.receiveAsFlow()
+
     fun confirmDeletion(id: String) {
         _reports.update { it.filter { report -> report.id != id } }
         _reportToDelete.value = null
@@ -132,41 +149,55 @@ class MyReportsViewModel @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Borrado pesimista: se espera al servidor antes de quitar el reporte de la lista.
+     * Es una acción irreversible sobre un reporte ya enviado, así que no hay "deshacer".
+     */
     fun delete(report: Report? = null) {
         val id = report?.id ?: return
+        if (id in _deletingReportIds.value) return
+
         viewModelScope.launch {
+            _deletingReportIds.update { it + id }
             try {
-                val result = ReportRepository.delete(id)
+                val result = deleteProvider(id)
                 if (result == SuccessfulResult.DELETED) {
                     confirmDeletion(id)
+                    _events.send(MyReportsEvent.ReportDeleted)
+                } else {
+                    _events.send(MyReportsEvent.ReportDeleteFailed(report))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _events.send(MyReportsEvent.ReportDeleteFailed(report))
+            } finally {
+                _deletingReportIds.update { it - id }
             }
         }
     }
 
-    fun openInMaps(coordinate: Coordinate) {
-        viewModelScope.launch {
-            MapExplorerViewModel.shared.loadReportsWith(coordinate)
-            val targetAuthVm = MapExplorerViewModel.shared.authViewModel ?: AuthViewModel.shared
-            targetAuthVm.setCameraPosition(
-                to = coordinate,
-                latitudeDelta = 0.000392298826163122953,
-                longitudeDelta = 0.0003914447804127257768
+    /**
+     * Abre el reporte en el mapa **interno** de la app (tab Issues), no en una app externa.
+     *
+     * Publica la petición en [MapFocusCoordinator] y cambia de tab. El mapa carga ese
+     * reporte explícitamente, aunque esté fuera del viewport o excluido por los filtros.
+     */
+    fun openInMaps(report: Report) {
+        val id = report.id ?: return
+        MapFocusCoordinator.shared.focus(
+            MapFocusRequest(
+                reportId = id,
+                coordinate = report.coordinate,
+                cityId = report.cityId
             )
-            app.reportamelo.communityIssues.helpers.DeepLinkRouter.shared.activeTab.value = 1
-        }
+        )
+        DeepLinkRouter.shared.activeTab.value = 1
     }
+}
 
-    fun openDetails(reportId: String, cityId: String) {
-        viewModelScope.launch {
-            try {
-                MapExplorerRepository.report(reportId, "SV", cityId)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
+/** Avisos de un solo consumo para la UI de Mis reportes. */
+sealed interface MyReportsEvent {
+    data object ReportDeleted : MyReportsEvent
+    data class ReportDeleteFailed(val report: Report) : MyReportsEvent
 }
 

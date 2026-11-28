@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 import app.reportamelo.communityIssues.R
+import app.reportamelo.communityIssues.helpers.MapFocusRequest
 import app.reportamelo.communityIssues.helpers.localized
 
 
@@ -38,6 +39,10 @@ data class IssueMarker(
 class MapExplorerViewModel : ViewModel() {
     companion object {
         val shared = MapExplorerViewModel()
+
+        /** Acercamiento usado al enfocar un reporte concreto. Espejo de iOS `openInMaps`. */
+        const val FOCUS_LATITUDE_DELTA = 0.000392298826163122953
+        const val FOCUS_LONGITUDE_DELTA = 0.0003914447804127257768
     }
 
     var authViewModel: AuthViewModel? = null
@@ -224,6 +229,45 @@ class MapExplorerViewModel : ViewModel() {
             }
         } catch (e: Exception) {
             handleException(e)
+        }
+    }
+
+    /**
+     * Enfoca el mapa interno en un reporte pedido desde otro tab (acción "Open in Maps").
+     *
+     * El reporte puede estar fuera del viewport o excluido por los filtros activos, así que
+     * se carga explícitamente en vez de buscarlo entre los que el mapa ya tiene; su detalle
+     * se muestra por encima de los filtros, que no se tocan.
+     *
+     * Devuelve el reporte cargado, o `null` si la petición falló.
+     */
+    suspend fun focusOnReport(request: MapFocusRequest): MapExplorerReport? {
+        request.coordinate?.let { coordinate ->
+            authViewModel?.setCameraPosition(
+                to = coordinate,
+                latitudeDelta = FOCUS_LATITUDE_DELTA,
+                longitudeDelta = FOCUS_LONGITUDE_DELTA
+            )
+            loadReportsWith(coordinate)
+        }
+
+        return try {
+            val report = MapExplorerRepository.report(
+                request.reportId,
+                CountryCode.SV.name,
+                request.cityId.orEmpty()
+            )
+            if (request.coordinate == null) {
+                authViewModel?.setCameraPosition(
+                    to = Coordinate(report.lat, report.lng),
+                    latitudeDelta = FOCUS_LATITUDE_DELTA,
+                    longitudeDelta = FOCUS_LONGITUDE_DELTA
+                )
+            }
+            report
+        } catch (e: Exception) {
+            handleException(e)
+            null
         }
     }
 
