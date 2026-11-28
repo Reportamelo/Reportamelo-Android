@@ -6,12 +6,14 @@ import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,8 +42,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.reportamelo.commons.ReportViolationStatus
@@ -57,6 +63,7 @@ import app.reportamelo.communityIssues.ui.theme.LightCardBackground
 import app.reportamelo.repository.UserRepository
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.floor
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import app.reportamelo.communityIssues.R
@@ -126,6 +133,16 @@ fun ReportsAndViolationsCenterView(
     val isDark = isSystemInDarkTheme()
     val cardBackground = if (isDark) MaterialTheme.colorScheme.surface else LightCardBackground
     val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.67f)
+
+    // The pager is the source of truth for the visible tab. It starts on the tab the view model
+    // remembers and reports back only settled pages, so a swipe the user abandons halfway never
+    // flips the selection.
+    val pagerState = rememberPagerState(initialPage = selectedTab) { ModerationTab.entries.size }
+    val pageSpringSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { viewModel.selectTab(it) }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadComplaints()
@@ -292,56 +309,60 @@ fun ReportsAndViolationsCenterView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Tabs matching iOS HStack(spacing: 32)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(32.dp),
-                verticalAlignment = Alignment.Bottom
+            // Material 3 primary, fixed tabs: they switch between the two top-level views of this
+            // screen. The labels select on `targetPage` (as soon as a tab is tapped or a swipe
+            // passes the threshold); the indicator tracks the pager position continuously.
+            PrimaryTabRow(
+                selectedTabIndex = pagerState.targetPage,
+                containerColor = cardBackground,
+                indicator = { PagerTabIndicator(pagerState) },
+                divider = { HorizontalDivider(thickness = 0.5.dp, color = dividerColor) }
             ) {
-                ModerationTabButton(
-                    modifier = Modifier.weight(1f),
-                    title = stringResource(R.string.your_account),
-                    selected = selectedTab == 0,
-                    onClick = { viewModel.selectTab(0) }
-                )
-
-                ModerationTabButton(
-                    modifier = Modifier.weight(1f),
-                    title = stringResource(R.string.your_reports),
-                    selected = selectedTab == 1,
-                    onClick = { viewModel.selectTab(1) }
-                )
-
-                Spacer(modifier = Modifier.width(24.dp))
+                ModerationTab.entries.forEach { tab ->
+                    Tab(
+                        selected = pagerState.targetPage == tab.ordinal,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    page = tab.ordinal,
+                                    animationSpec = pageSpringSpec
+                                )
+                            }
+                        },
+                        text = {
+                            Text(
+                                text = stringResource(tab.titleRes),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
-        HorizontalDivider(
-            thickness = 0.5.dp,
-            color = dividerColor
-        )
-
-        // Content Area
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        // Content area: swiping horizontally moves between the tabs ("Swipe within the content area")
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) { page ->
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+                return@HorizontalPager
             }
-        } else {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                if (selectedTab == 0) {
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (page == ModerationTab.ACCOUNT.ordinal) {
                     // Your account
                     if (indictedModeratedContent.isEmpty()) {
                         EmptyStateView(
@@ -445,36 +466,45 @@ fun ReportsAndViolationsCenterView(
     }
 }
 
+/** Tabs of the moderation center. The order is the page index (also what `ModerationViewModel.selectedTab` stores). */
+private enum class ModerationTab(@StringRes val titleRes: Int) {
+    ACCOUNT(R.string.your_account),
+    REPORTS(R.string.your_reports)
+}
+
+/**
+ * Primary tab indicator that follows the pager position during a swipe, as the Material tabs spec
+ * asks for tabs paired with a pager ("synchronize the selected tab and tab indicator position with
+ * page swipes"). It interpolates position and width between the two tabs it sits between, using the
+ * same content-width rule as the default indicator.
+ *
+ * The pager is read during layout, so a swipe only re-measures the indicator: nothing recomposes.
+ */
 @Composable
-fun ModerationTabButton(
-    modifier: Modifier = Modifier,
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Column(
-        modifier = modifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onClick
-        ),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = title,
-            fontSize = 15.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) MaterialTheme.colorScheme.onBackground else SecondarySubtitleColor
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(if (selected) MaterialTheme.colorScheme.onBackground else Color.Transparent)
-        )
-    }
+private fun TabIndicatorScope.PagerTabIndicator(pagerState: PagerState) {
+    TabRowDefaults.PrimaryIndicator(
+        modifier = Modifier.tabIndicatorLayout { measurable, constraints, tabPositions ->
+            if (tabPositions.isEmpty()) return@tabIndicatorLayout layout(0, 0) {}
+
+            val position = (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                .coerceIn(0f, tabPositions.lastIndex.toFloat())
+            val fromIndex = floor(position).toInt()
+            val toIndex = (fromIndex + 1).coerceAtMost(tabPositions.lastIndex)
+            val fraction = position - fromIndex
+            val from = tabPositions[fromIndex]
+            val to = tabPositions[toIndex]
+
+            val width = lerp(from.contentWidth, to.contentWidth, fraction).roundToPx()
+            val left = lerp(from.left, to.left, fraction).roundToPx()
+            val offset = if (layoutDirection == LayoutDirection.Ltr) left else -left
+
+            val placeable = measurable.measure(
+                constraints.copy(minWidth = width, maxWidth = width)
+            )
+            layout(placeable.width, placeable.height) { placeable.place(offset, 0) }
+        },
+        width = Dp.Unspecified
+    )
 }
 
 @Composable
