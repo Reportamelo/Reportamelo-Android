@@ -1,0 +1,14 @@
+Places SDK for Android
+Copyright Google LLC
+
+The Places SDK for Android (com.google.android.libraries.places:places) is not
+open source software. It is licensed to you under the Google Maps Platform Terms
+of Service, which incorporate the Google Cloud Platform Terms of Service and the
+Google Maps Platform Service Specific Terms.
+
+    https://cloud.google.com/maps-platform/terms/
+
+The terms are published and updated by Google at that address and are not
+redistributed here. Open source notices for third-party code bundled inside the
+SDK are shipped with the library itself, in the file third_party_licenses.txt
+inside the places artifact.
