@@ -25,7 +25,7 @@ android {
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
@@ -45,6 +45,42 @@ android {
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
+}
+
+/**
+ * Copies the third-party license texts kept in `<root>/licenses` into the APK as
+ * `assets/licenses/…`, read by the Licenses screen. The files stay in a single place at the repo
+ * root; a missing folder fails the build instead of shipping the app without its notices.
+ */
+abstract class SyncLicenseAssetsTask : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val licensesDir: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val fileSystem: FileSystemOperations
+
+    @TaskAction
+    fun sync() {
+        fileSystem.sync {
+            from(licensesDir)
+            into(outputDir.dir("licenses"))
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val syncLicenses = tasks.register<SyncLicenseAssetsTask>(
+            "sync${variant.name.replaceFirstChar { it.uppercase() }}LicenseAssets"
+        ) {
+            licensesDir.set(rootProject.layout.projectDirectory.dir("licenses"))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(syncLicenses, SyncLicenseAssetsTask::outputDir)
     }
 }
 
