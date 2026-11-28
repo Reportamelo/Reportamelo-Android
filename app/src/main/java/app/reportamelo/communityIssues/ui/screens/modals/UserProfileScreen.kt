@@ -1,6 +1,7 @@
 package app.reportamelo.communityIssues.ui.screens.modals
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -34,6 +35,7 @@ import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.ui.components.LinkType
 import app.reportamelo.communityIssues.ui.components.LinksView
 import app.reportamelo.communityIssues.ui.components.ProfileImage
+import app.reportamelo.communityIssues.ui.components.rememberSubViewTransitions
 import app.reportamelo.communityIssues.ui.components.ThemedButton
 import app.reportamelo.communityIssues.ui.components.ThemedButtonStyle
 import app.reportamelo.communityIssues.ui.components.ThemedButtonType
@@ -109,81 +111,24 @@ fun UserProfileScreen(
         profileDataModel.setIsGuest(effectiveIsGuest)
     }
 
-    reportToModify?.let { report ->
-        BackHandler { reportToModify = null }
-        ReportWizardContainer(
-            modifier = modifier,
-            model = ReportDataModel.shared,
-            onCompletion = { _, _ -> reportToModify = null },
-            reportToModify = report
-        )
-        return
+    val transitions = rememberSubViewTransitions()
+    val route: ProfileRoute = when {
+        reportToModify != null -> ProfileRoute.ModifyReport(reportToModify!!)
+        timelineReportId != null -> ProfileRoute.Timeline(timelineReportId!!)
+        currentDestination != null && currentDestination != ProfileDestinations.SIGN_PETITIONS ->
+            ProfileRoute.Destination(currentDestination!!)
+        else -> ProfileRoute.Root
     }
 
-    timelineReportId?.let { reportId ->
-        BackHandler { timelineReportId = null }
-        ReportTimelineSubView(
-            modifier = modifier,
-            reportId = reportId,
-            onBack = { timelineReportId = null }
-        )
-        return
-    }
-
-    if (currentDestination != null) {
-        BackHandler {
-            currentDestination = null
+    // A single back handler pops one level of the stack. Sub-views that open a layer of their own
+    // (Settings -> city selection, the wizard steps) register theirs later, so they still win
+    // while that layer is open.
+    BackHandler(enabled = route != ProfileRoute.Root) {
+        when {
+            reportToModify != null -> reportToModify = null
+            timelineReportId != null -> timelineReportId = null
+            else -> currentDestination = null
         }
-        when (currentDestination) {
-            ProfileDestinations.REPORTS -> {
-                MyReportsSubView(
-                    modifier = modifier,
-                    subViewName = stringResource(R.string.my_reports),
-                    mode = ViewOptions.LIST_AND_MODIFY,
-                    onReportToModify = { reportToModify = it },
-                    onOpenTimeline = { timelineReportId = it },
-                    onBack = { currentDestination = null }
-                )
-            }
-            ProfileDestinations.COMMENTS -> {
-                CommentsSubView(
-                    modifier = modifier,
-                    subViewName = stringResource(R.string.my_comments),
-                    mode = ViewOptions.LIST,
-                    onBack = { currentDestination = null }
-                )
-            }
-            ProfileDestinations.SETTINGS -> {
-                SettingsSubView(
-                    modifier = modifier,
-                    subViewName = stringResource(R.string.settings),
-                    onBack = { currentDestination = null },
-                    onAccountDeleted = {
-                        currentDestination = null
-                        landingViewModel.logout(authViewModel)
-                        landingViewModel.setAccountDeleted(true)
-                        onLogout?.invoke()
-                    }
-                )
-            }
-            ProfileDestinations.MODERATION -> {
-                ReportsAndViolationsCenterView(
-                    modifier = modifier,
-                    onBack = { currentDestination = null }
-                )
-            }
-            ProfileDestinations.LICENSES -> {
-                LicensesSubView(
-                    modifier = modifier,
-                    subViewName = stringResource(R.string.licenses),
-                    onBack = { currentDestination = null }
-                )
-            }
-            ProfileDestinations.SIGN_PETITIONS, null -> {
-                currentDestination = null
-            }
-        }
-        return
     }
 
     val options = listOf(
@@ -228,176 +173,271 @@ fun UserProfileScreen(
     val baseBackgroundColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF6F6F8)
     val cardBackgroundColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color.White
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(baseBackgroundColor)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF9F7BF6).copy(alpha = 0.25f),
-                        Color.Transparent
-                    ),
-                    center = Offset(0f, 0f),
-                    radius = 850f
-                )
+    AnimatedContent(
+        targetState = route,
+        modifier = modifier,
+        transitionSpec = {
+            transitions.transform(forward = targetState.depth > initialState.depth)
+        },
+        contentKey = { it.key },
+        label = "ProfileRoute"
+    ) { target ->
+        when (target) {
+            is ProfileRoute.ModifyReport -> ReportWizardContainer(
+                model = ReportDataModel.shared,
+                onCompletion = { _, _ -> reportToModify = null },
+                reportToModify = target.report
             )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            // Top bar with centered "Profile" title
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.profile),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
+
+            is ProfileRoute.Timeline -> ReportTimelineSubView(
+                reportId = target.reportId,
+                onBack = { timelineReportId = null }
+            )
+
+            is ProfileRoute.Destination -> when (target.destination) {
+                ProfileDestinations.REPORTS -> MyReportsSubView(
+                    subViewName = stringResource(R.string.my_reports),
+                    mode = ViewOptions.LIST_AND_MODIFY,
+                    onReportToModify = { reportToModify = it },
+                    onOpenTimeline = { timelineReportId = it },
+                    onBack = { currentDestination = null }
                 )
 
-                if (onDismiss != null) {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.align(Alignment.CenterEnd)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close)
-                        )
+                ProfileDestinations.COMMENTS -> CommentsSubView(
+                    subViewName = stringResource(R.string.my_comments),
+                    mode = ViewOptions.LIST,
+                    onBack = { currentDestination = null }
+                )
+
+                ProfileDestinations.SETTINGS -> SettingsSubView(
+                    subViewName = stringResource(R.string.settings),
+                    onBack = { currentDestination = null },
+                    onAccountDeleted = {
+                        currentDestination = null
+                        landingViewModel.logout(authViewModel)
+                        landingViewModel.setAccountDeleted(true)
+                        onLogout?.invoke()
                     }
-                }
+                )
+
+                ProfileDestinations.MODERATION -> ReportsAndViolationsCenterView(
+                    onBack = { currentDestination = null }
+                )
+
+                ProfileDestinations.LICENSES -> LicensesSubView(
+                    subViewName = stringResource(R.string.licenses),
+                    onBack = { currentDestination = null }
+                )
+
+                // Not reachable from this screen: the route maps it to Root
+                ProfileDestinations.SIGN_PETITIONS -> Unit
             }
 
-            // Scrollable Profile Header & Options Card
-            Column(
+            ProfileRoute.Root -> {
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxSize()
+                    .background(baseBackgroundColor)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFF9F7BF6).copy(alpha = 0.25f),
+                                Color.Transparent
+                            ),
+                            center = Offset(0f, 0f),
+                            radius = 850f
+                        )
+                    )
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                ProfileImage(
-                    profile = profileDataModel
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = effectiveUserName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = effectiveUserAlias,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Inset grouped rounded card for Profile Options
-                Surface(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    color = cardBackgroundColor,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.5.dp
+                        .fillMaxSize()
+                        .statusBarsPadding()
                 ) {
-                    Column(
+                    // Top bar with centered "Profile" title
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .height(52.dp)
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        options.forEachIndexed { index, option ->
-                            val isDisabled = if (effectiveIsGuest) {
-                                !(option.id == "op:settings" || option.id == "op:licenses")
-                            } else {
-                                disableCellButton(option.id, userRepository)
-                            }
+                        Text(
+                            text = stringResource(R.string.profile),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
 
-                            ProfileCellView(
-                                option = option,
-                                isDisabled = isDisabled,
-                                onClick = {
-                                    option.destination?.let { destination ->
-                                        onNavigate?.invoke(destination)
-                                        currentDestination = destination
-                                    }
-                                }
-                            )
-
-                            if (index < options.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 66.dp, end = 16.dp),
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                        if (onDismiss != null) {
+                            IconButton(
+                                onClick = onDismiss,
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.close)
                                 )
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+                    // Scrollable Profile Header & Options Card
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(8.dp))
 
-            // Bottom Section: Log Out button & Terms/Privacy/EULA/Policies links
-            // Mirrors iOS .safeAreaInset(edge: .bottom) positioned above FloatingBottomBar
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 20.dp)
-                    .padding(
-                        top = 8.dp,
-                        bottom = if (onDismiss == null) 90.dp else 16.dp
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ThemedButton(
-                    message = stringResource(R.string.log_out),
-                    type = ThemedButtonType.OUTLINE,
-                    style = ThemedButtonStyle.NORMAL,
-                    isLoading = isLoading,
-                    onClick = {
-                        coroutineScope.launch {
-                            isLoading = true
-                            try {
-                                userRepository.logout()
-                            } catch (_: Exception) {
-                                // Ephemeral guest sessions (30m) or offline states still log out locally
-                            } finally {
-                                isLoading = false
-                                landingViewModel.logout(authViewModel)
-                                onLogout?.invoke()
+                        ProfileImage(
+                            profile = profileDataModel
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = effectiveUserName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = effectiveUserAlias,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Inset grouped rounded card for Profile Options
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            color = cardBackgroundColor,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.5.dp
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                options.forEachIndexed { index, option ->
+                                    val isDisabled = if (effectiveIsGuest) {
+                                        !(option.id == "op:settings" || option.id == "op:licenses")
+                                    } else {
+                                        disableCellButton(option.id, userRepository)
+                                    }
+
+                                    ProfileCellView(
+                                        option = option,
+                                        isDisabled = isDisabled,
+                                        onClick = {
+                                            option.destination?.let { destination ->
+                                                onNavigate?.invoke(destination)
+                                                currentDestination = destination
+                                            }
+                                        }
+                                    )
+
+                                    if (index < options.lastIndex) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 66.dp, end = 16.dp),
+                                            thickness = 0.5.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                                        )
+                                    }
+                                }
                             }
                         }
-                    }
-                )
 
-                LinksView(
-                    type = LinkType.Full,
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    // Bottom Section: Log Out button & Terms/Privacy/EULA/Policies links
+                    // Mirrors iOS .safeAreaInset(edge: .bottom) positioned above FloatingBottomBar
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp)
+                            .padding(
+                                top = 8.dp,
+                                bottom = if (onDismiss == null) 90.dp else 16.dp
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ThemedButton(
+                            message = stringResource(R.string.log_out),
+                            type = ThemedButtonType.OUTLINE,
+                            style = ThemedButtonStyle.NORMAL,
+                            isLoading = isLoading,
+                            onClick = {
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    try {
+                                        userRepository.logout()
+                                    } catch (_: Exception) {
+                                        // Ephemeral guest sessions (30m) or offline states still log out locally
+                                    } finally {
+                                        isLoading = false
+                                        landingViewModel.logout(authViewModel)
+                                        onLogout?.invoke()
+                                    }
+                                }
+                            }
+                        )
+
+                        LinksView(
+                            type = LinkType.Full,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                    }
+                }
+            }
             }
         }
+    }
+}
+
+/**
+ * Where the profile tab currently is. [depth] gives the transition its direction: going deeper is
+ * "forward", going up is "back".
+ */
+private sealed interface ProfileRoute {
+    val depth: Int
+
+    /** Stable identity for `AnimatedContent`, so a refreshed object for the same screen doesn't animate. */
+    val key: Any
+
+    data object Root : ProfileRoute {
+        override val depth = 0
+        override val key: Any = "root"
+    }
+
+    data class Destination(val destination: ProfileDestinations) : ProfileRoute {
+        override val depth = 1
+        override val key: Any = destination
+    }
+
+    data class ModifyReport(val report: Report) : ProfileRoute {
+        override val depth = 2
+        override val key: Any = "modify:${report.id}"
+    }
+
+    data class Timeline(val reportId: String) : ProfileRoute {
+        override val depth = 2
+        override val key: Any = "timeline:$reportId"
     }
 }
 
