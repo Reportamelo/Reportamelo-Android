@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -60,11 +61,11 @@ class MapExplorerViewModelTest {
         viewModel.updateSearchText("Colonia Escalante")
         assertEquals("Colonia Escalante", viewModel.searchText.value)
 
-        viewModel.updateSelection(IssueStatus.CONFIRMED.title)
-        assertEquals(IssueStatus.CONFIRMED.title, viewModel.selectionState.value)
+        viewModel.updateSelection(IssueStatus.CONFIRMED)
+        assertEquals(IssueStatus.CONFIRMED, viewModel.selectionState.value)
 
-        viewModel.updateSelection("")
-        assertEquals("", viewModel.selectionState.value)
+        viewModel.updateSelection(null)
+        assertNull(viewModel.selectionState.value)
     }
 
     @Test

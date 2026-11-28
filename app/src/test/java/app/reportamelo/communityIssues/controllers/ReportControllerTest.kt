@@ -1,7 +1,9 @@
 package app.reportamelo.communityIssues.controllers
 
+import app.reportamelo.commons.IssueStatus
 import app.reportamelo.commons.CommonIntercommunicationErrors
 import app.reportamelo.communityIssues.datamodel.LocatorDAO
+import app.reportamelo.communityIssues.datamodel.Report
 import app.reportamelo.communityIssues.datamodel.ReportDataModel
 import app.reportamelo.communityIssues.datamodel.ReportStates
 import app.reportamelo.communityIssues.datamodel.mattersToResolve
@@ -20,6 +22,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
+import java.util.Date
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -362,5 +365,34 @@ class ReportControllerTest {
         assertEquals("Paseo General Escalón, San Salvador", capturedReportDao?.address)
         assertEquals("01a18fd0-7647-74ae-8659-5b28e23644c2", capturedReportDao?.attachmentRequests?.firstOrNull()?.attachmentId)
         assertTrue(model.report.value.attachments.isEmpty())
+    }
+
+    @Test
+    fun `startReporting in modifying mode never falls back to a random session (G2)`() {
+        val controller = ReportController()
+        val before = model.reportSession.value.reportContainer
+
+        model.prepareForModification(
+            Report(
+                id = null,
+                cityId = "1",
+                coordinate = Coordinate(13.7, -89.2),
+                address = "Alameda Manuel Enrique Araujo, San Salvador",
+                title = "Large pothole on main avenue",
+                description = "Deep pothole in the right lane near the intersection",
+                severityId = 1,
+                statusId = IssueStatus.REPORTED.identifier,
+                issueTypeId = 1,
+                matterToSolveId = 1,
+                cellIndex = "",
+                createdAt = Date(),
+                reportState = ReportStates.MODIFYING
+            )
+        )
+
+        controller.startReporting(model)
+
+        assertEquals(before, model.reportSession.value.reportContainer)
+        assertTrue(controller.presentAlert.value)
     }
 }

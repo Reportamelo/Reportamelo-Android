@@ -334,9 +334,9 @@ class AuthAndOnboardingViewModelsTest {
             documentsPerPage = 5
         )
 
-        val viewModel = MyReportsViewModel { _ ->
-            kotlinx.coroutines.flow.flowOf(page1)
-        }
+        val viewModel = MyReportsViewModel(
+            listByUserProvider = { kotlinx.coroutines.flow.flowOf(page1) }
+        )
 
         viewModel.fetchReports()
 
